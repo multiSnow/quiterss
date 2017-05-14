@@ -211,7 +211,7 @@ INCLUDEPATH +=  $$PWD/src \
                 $$PWD/src/network \
                 $$PWD/src/webview \
 
-CONFIG += debug_and_release
+CONFIG += release
 CONFIG(debug, debug|release) {
   BUILD_DIR = $$OUT_PWD/debug
 } else {
