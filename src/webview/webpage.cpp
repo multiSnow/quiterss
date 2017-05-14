@@ -49,8 +49,10 @@ WebPage::WebPage(QObject *parent)
           this, SLOT(handleUnsupportedContent(QNetworkReply*)));
   connect(this, SIGNAL(downloadRequested(QNetworkRequest)),
           this, SLOT(downloadRequested(QNetworkRequest)));
+#if !defined(HAVE_QT5) || defined(HAVE_PRINT)
   connect(this, SIGNAL(printRequested(QWebFrame*)),
           mainApp->mainWindow(), SLOT(slotPrint(QWebFrame*)));
+#endif
 
   livingPages_.append(this);
 }

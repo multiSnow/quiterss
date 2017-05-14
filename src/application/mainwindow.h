@@ -20,8 +20,10 @@
 
 #ifdef HAVE_QT5
 #include <QtWidgets>
+# ifdef HAVE_MEDIA
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
+# endif
 #else
 #include <QtGui>
 #ifdef HAVE_PHONON
@@ -32,10 +34,14 @@
 #include <QtSql>
 #include <QtWebKit>
 #include <QNetworkProxy>
+#if !defined(HAVE_QT5) || defined(HAVE_PRINT)
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
+#endif
+#if defined(HAVE_QT5) && defined(HAVE_MEDIA)
 #include <QSound>
+#endif
 
 #include "categoriestreewidget.h"
 #include "feedsmodel.h"
@@ -303,8 +309,10 @@ public slots:
   QWebPage *createWebTab(QUrl url = QUrl());
   void feedsModelReload(bool checkFilter = false);
   void setStatusFeed(int feedId, QString status);
+#if !defined(HAVE_QT5) || defined(HAVE_PRINT)
   void slotPrint(QWebFrame *frame = 0);
   void slotPrintPreview(QWebFrame* frame = 0);
+#endif
 
 signals:
   void signalPlaceToTray();
@@ -349,7 +357,7 @@ private slots:
   void slotFeedsViewportUpdate();
   void slotPlaySoundNewNews();
 
-#ifdef HAVE_QT5
+#if defined(HAVE_QT5) && defined(HAVE_MEDIA)
   void mediaStatusChanged(QMediaPlayer::MediaStatus status);
   void mediaError(QMediaPlayer::Error error);
 #endif
@@ -694,7 +702,7 @@ private:
   int openingFeedAction_;
   bool openNewsWebViewOn_;
 
-#ifdef HAVE_QT5
+#if defined(HAVE_QT5) && defined(HAVE_MEDIA)
   QMediaPlayer *mediaPlayer_;
   QMediaPlaylist *playlist_;
 #else

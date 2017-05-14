@@ -32,8 +32,16 @@ exists(.git) {
 }
 
 isEqual(QT_MAJOR_VERSION, 5) {
-  QT += widgets webkitwidgets network xml printsupport sql multimedia
+  QT += widgets webkitwidgets network xml sql
   DEFINES += HAVE_QT5
+  isEmpty(DISABLE_PRINT) {
+    QT += printsupport
+    DEFINES += HAVE_PRINT
+  }
+  isEmpty(DISABLE_MEDIA) {
+    QT += multimedia
+    DEFINES += HAVE_MEDIA
+  }
 } else {
   QT += core gui network xml webkit sql
   os2 {
