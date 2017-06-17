@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2016 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -302,7 +302,7 @@ public slots:
   void myEmptyWorkingSet();
   void slotUpdateFeed(int feedId, bool changed, int newCount, bool finish);
   void slotFeedCountsUpdate(FeedCountStruct counts);
-  void slotUpdateNews(int refresh = NewsTabWidget::RefreshInsert);
+  void slotUpdateNews(int refresh);
   void slotUpdateStatus(int feedId, bool changed = true);
   void setNewsFilter(QAction*, bool clicked = true);
   void slotCloseTab(int index);

@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2016 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include "cookiejar.h"
 #include "downloadmanager.h"
 #include "mainwindow.h"
+#include "ganalytics.h"
 
 class NetworkManager;
 class SplashScreen;
@@ -51,6 +52,7 @@ public:
   bool isClosing() const;
   bool isNoDebugOutput() const { return noDebugOutput_; }
   void showClosingWidget();
+  bool dataDirInitialized() const { return dataDirInitialized_; }
 
   QString resourcesDir() const;
   QString dataDir() const;
@@ -85,6 +87,8 @@ public:
   QString language() const { return langFileName_; }
   void setLanguage(const QString &lang) { langFileName_ = lang; }
 
+  GAnalytics *analytics() const { return analytics_; }
+
 public slots:
   void receiveMessage(const QString &message);
   void quitApplication();
@@ -101,6 +105,7 @@ private:
   void checkPortable();
   void checkDir();
   void createSettings();
+  void createGoogleAnalytics();
   void connectDatabase();
   void loadSettings();
   void setStyleApplication();
@@ -108,9 +113,12 @@ private:
   void closeSplashScreen();
   void setProgressSplashScreen(int value);
 
+  QUrl userStyleSheet(const QString &filePath) const;
+
   bool isPortable_;
   bool isPortableAppsCom_;
   bool isClosing_;
+  bool dataDirInitialized_;
 
   QString resourcesDir_;
   QString dataDir_;
@@ -139,7 +147,7 @@ private:
   QStringList c2fWhitelist_;
   bool c2fEnabled_;
 
-  QUrl userStyleSheet(const QString &filePath) const;
+  GAnalytics *analytics_;
 
 };
 

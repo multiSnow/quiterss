@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2016 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@ MainApplication::MainApplication(int &argc, char **argv)
   , isPortable_(false)
   , isPortableAppsCom_(false)
   , isClosing_(false)
+  , dataDirInitialized_(false)
   , dbFileExists_(false)
   , translator_(0)
   , mainWindow_(0)
@@ -39,6 +40,7 @@ MainApplication::MainApplication(int &argc, char **argv)
   , cookieJar_(0)
   , diskCache_(0)
   , downloadManager_(0)
+  , analytics_(0)
 {
   QString message = arguments().value(1);
   if (isRunning()) {
@@ -82,6 +84,8 @@ MainApplication::MainApplication(int &argc, char **argv)
   setStyleApplication();
   setTranslateApplication();
   showSplashScreen();
+
+  createGoogleAnalytics();
 
   connectDatabase();
   setProgressSplashScreen(30);
@@ -202,6 +206,7 @@ void MainApplication::checkDir()
     QDir dir(dataDir_);
     dir.mkpath(dataDir_);
   }
+  dataDirInitialized_ = true;
 }
 
 void MainApplication::createSettings()
@@ -250,6 +255,22 @@ void MainApplication::createSettings()
   settings.endGroup();
 }
 
+void MainApplication::createGoogleAnalytics()
+{
+  Settings settings;
+  bool statisticsEnabled = settings.value("Settings/statisticsEnabled2", true).toBool();
+  if (statisticsEnabled) {
+    QString clientID;
+    if (!settings.contains("GAnalytics-cid")) {
+      settings.setValue("GAnalytics-cid", QUuid::createUuid().toString());
+    }
+    clientID = settings.value("GAnalytics-cid").toString();
+    analytics_ = new GAnalytics(this, TRACKING_ID, clientID);
+    analytics_->generateUserAgentEtc();
+    analytics_->startSession();
+  }
+}
+
 void MainApplication::connectDatabase()
 {
   QString fileName(dbFileName() % ".bak");
@@ -287,6 +308,12 @@ void MainApplication::quitApplication()
   delete networkManager_;
   delete cookieJar_;
   delete closingWidget_;
+
+  if (analytics_) {
+    analytics_->endSession();
+    analytics_->waitForIdle();
+    delete analytics_;
+  }
 
   qWarning() << "Quit application";
 

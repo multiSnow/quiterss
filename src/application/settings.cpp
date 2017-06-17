@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2016 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -78,4 +78,9 @@ void Settings::setValue(const QString &key, const QVariant &defaultValue)
 QVariant Settings::value(const QString &key, const QVariant &defaultValue)
 {
   return settings_->value(key, defaultValue);
+}
+
+bool Settings::contains(const QString &key)
+{
+  return settings_->contains(key);
 }

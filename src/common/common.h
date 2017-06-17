@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2016 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@
 
 #include <QString>
 #include <QDir>
+
+#define TRACKING_ID "UA-99877778-1"
 
 #define ADBLOCK_EASYLIST_URL "https://easylist-downloads.adblockplus.org/easylist.txt"
 
@@ -59,6 +61,10 @@ namespace Common
   QByteArray readAllFileByteContents(const QString &filename);
 
   void sleep(int ms);
+
+  QString operatingSystem();
+  QString cpuArchitecture();
+  QString operatingSystemLong();
 }
 
 #endif // COMMON_H
