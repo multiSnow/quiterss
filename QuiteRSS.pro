@@ -52,6 +52,9 @@ isEqual(QT_MAJOR_VERSION, 5) {
     DEFINES += HAVE_PHONON
   }
 }
+isEmpty(DISABLE_ANALYTICS) {
+  DEFINES += USE_ANALYTICS
+}
 
 unix:!mac:DEFINES += HAVE_X11
 
@@ -235,7 +238,9 @@ isEqual(QT_MAJOR_VERSION, 5) {
 include(3rdparty/sqlite.pri)
 include(lang/lang.pri)
 include(3rdparty/qupzilla/qupzilla.pri)
-include(3rdparty/ganalytics/ganalytics.pri)
+isEmpty(DISABLE_ANALYTICS) {
+  include(3rdparty/ganalytics/ganalytics.pri)
+}
 
 os2|win32|mac {
   TARGET = QuiteRSS

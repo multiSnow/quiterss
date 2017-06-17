@@ -171,6 +171,7 @@ void Common::sleep(int ms)
 #endif
 }
 
+#ifdef USE_ANALYTICS
 QString Common::operatingSystem()
 {
 #ifdef Q_OS_MAC
@@ -304,3 +305,4 @@ QString Common::operatingSystemLong()
     return os;
   return os + QSL(" ") + arch;
 }
+#endif
