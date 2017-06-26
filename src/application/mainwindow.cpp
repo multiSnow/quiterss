@@ -1662,8 +1662,6 @@ void MainWindow::saveActionShortcuts()
 // ---------------------------------------------------------------------------
 void MainWindow::createMenu()
 {
-  mainMenu_ = new QMenu(this);
-
   newMenu_ = new QMenu(this);
   newMenu_->addAction(addFeedAct_);
   newMenu_->addAction(addFolderAct_);
@@ -1682,14 +1680,6 @@ void MainWindow::createMenu()
   fileMenu_->addSeparator();
 #endif
   fileMenu_->addAction(exitAct_);
-
-  mainMenu_->addAction(addAct_);
-  mainMenu_->addSeparator();
-  mainMenu_->addAction(importFeedsAct_);
-  mainMenu_->addAction(exportFeedsAct_);
-  mainMenu_->addSeparator();
-  mainMenu_->addAction(createBackupAct_);
-  mainMenu_->addSeparator();
 
   toolbarsMenu_ = new QMenu(this);
   toolbarsMenu_->addAction(mainToolbarToggle_);
@@ -1744,16 +1734,6 @@ void MainWindow::createMenu()
   viewMenu_->addSeparator();
   viewMenu_->addAction(stayOnTopAct_);
   viewMenu_->addAction(fullScreenAct_);
-  mainMenu_->addMenu(viewMenu_);
-
-  feedMenu_ = new QMenu(this);
-  feedMenu_->addAction(updateFeedAct_);
-  feedMenu_->addAction(updateAllFeedsAct_);
-  feedMenu_->addSeparator();
-  feedMenu_->addAction(markFeedRead_);
-  feedMenu_->addAction(markAllFeedsRead_);
-  feedMenu_->addSeparator();
-  mainMenu_->addMenu(feedMenu_);
 
   feedsFilterGroup_ = new QActionGroup(this);
   feedsFilterGroup_->setExclusive(true);
@@ -1768,7 +1748,6 @@ void MainWindow::createMenu()
   feedsFilterMenu_->insertSeparator(filterFeedsNew_);
 
   feedsFilter_->setMenu(feedsFilterMenu_);
-  feedMenu_->addAction(feedsFilter_);
 
   feedsColumnsGroup_ = new QActionGroup(this);
   feedsColumnsGroup_->setExclusive(false);
@@ -1778,23 +1757,23 @@ void MainWindow::createMenu()
 
   feedsColumnsMenu_ = new QMenu(this);
   feedsColumnsMenu_->addActions(feedsColumnsGroup_->actions());
-  feedMenu_->addMenu(feedsColumnsMenu_);
 
+  feedMenu_ = new QMenu(this);
+  feedMenu_->addAction(updateFeedAct_);
+  feedMenu_->addAction(updateAllFeedsAct_);
+  feedMenu_->addSeparator();
+  feedMenu_->addAction(markFeedRead_);
+  feedMenu_->addAction(markAllFeedsRead_);
+  feedMenu_->addSeparator();
+  feedMenu_->addAction(feedsFilter_);
+  feedMenu_->addMenu(feedsColumnsMenu_);
   feedMenu_->addAction(sortedByTitleFeedsTreeAct_);
   feedMenu_->addAction(indentationFeedsTreeAct_);
-
   feedMenu_->addSeparator();
   feedMenu_->addAction(deleteFeedAct_);
   feedMenu_->addSeparator();
   feedMenu_->addAction(feedProperties_);
   feedMenu_->addSeparator();
-
-  newsMenu_ = new QMenu(this);
-  newsMenu_->addAction(markNewsRead_);
-  newsMenu_->addAction(markAllNewsRead_);
-  newsMenu_->addSeparator();
-  newsMenu_->addAction(markStarAct_);
-  mainMenu_->addMenu(newsMenu_);
 
   newsLabelMenu_ = new QMenu(this);
   newsLabelMenu_->addActions(newsLabelGroup_->actions());
@@ -1802,7 +1781,6 @@ void MainWindow::createMenu()
   newsLabelMenuAction_->setIcon(QIcon(":/images/label_3"));
   newsLabelAction_->setMenu(newsLabelMenu_);
   newsLabelMenuAction_->setMenu(newsLabelMenu_);
-  newsMenu_->addAction(newsLabelMenuAction_);
 
   shareMenu_ = new QMenu(this);
   shareMenu_->addActions(shareGroup_->actions());
@@ -1810,10 +1788,7 @@ void MainWindow::createMenu()
   shareMenuAct_->setObjectName("shareMenuAct");
   shareMenuAct_->setIcon(QIcon(":/images/images/share.png"));
   shareMenuAct_->setMenu(shareMenu_);
-  newsMenu_->addAction(shareMenuAct_);
   this->addAction(shareMenuAct_);
-
-  newsMenu_->addSeparator();
 
   newsFilterGroup_ = new QActionGroup(this);
   newsFilterGroup_->setExclusive(true);
@@ -1832,19 +1807,24 @@ void MainWindow::createMenu()
   newsFilterMenu_->insertSeparator(filterNewsLastDay_);
 
   newsFilter_->setMenu(newsFilterMenu_);
-  newsMenu_->addAction(newsFilter_);
 
   newsSortByMenu_ = new QMenu(this);
   newsSortByMenu_->addSeparator();
   newsSortByMenu_->addActions(newsSortOrderGroup_->actions());
 
+  newsMenu_ = new QMenu(this);
+  newsMenu_->addAction(markNewsRead_);
+  newsMenu_->addAction(markAllNewsRead_);
+  newsMenu_->addSeparator();
+  newsMenu_->addAction(markStarAct_);
+  newsMenu_->addAction(newsLabelMenuAction_);
+  newsMenu_->addAction(shareMenuAct_);
+  newsMenu_->addSeparator();
+  newsMenu_->addAction(newsFilter_);
   newsMenu_->addMenu(newsSortByMenu_);
   newsMenu_->addSeparator();
   newsMenu_->addAction(deleteNewsAct_);
   newsMenu_->addAction(deleteAllNewsAct_);
-
-  browserMenu_ = new QMenu(this);
-  mainMenu_->addMenu(browserMenu_);
 
   browserZoomGroup_ = new QActionGroup(this);
   browserZoomGroup_->addAction(zoomInAct_);
@@ -1856,6 +1836,7 @@ void MainWindow::createMenu()
   browserZoomMenu_->addActions(browserZoomGroup_->actions());
   browserZoomMenu_->insertSeparator(zoomTo100Act_);
 
+  browserMenu_ = new QMenu(this);
   browserMenu_->addAction(autoLoadImagesToggle_);
   browserMenu_->addMenu(browserZoomMenu_);
   browserMenu_->addSeparator();
@@ -1868,7 +1849,6 @@ void MainWindow::createMenu()
   browserMenu_->addSeparator();
   browserMenu_->addAction(tr("&AdBlock"), AdBlockManager::instance(), SLOT(showDialog()));
 
-  mainMenu_->addSeparator();
   toolsMenu_ = new QMenu(this);
   toolsMenu_->addAction(showDownloadManagerAct_);
   toolsMenu_->addSeparator();
@@ -1876,7 +1856,6 @@ void MainWindow::createMenu()
   toolsMenu_->addAction(setNewsFiltersAct_);
   toolsMenu_->addSeparator();
   toolsMenu_->addAction(optionsAct_);
-  mainMenu_->addMenu(toolsMenu_);
 
   helpMenu_ = new QMenu(this);
   helpMenu_->addAction(updateAppAct_);
@@ -1884,15 +1863,28 @@ void MainWindow::createMenu()
   helpMenu_->addAction(reportProblemAct_);
   helpMenu_->addAction(aboutAct_);
 
+#ifndef Q_OS_MAC
+  mainMenu_ = new QMenu(this);
+  mainMenu_->addAction(addAct_);
+  mainMenu_->addSeparator();
+  mainMenu_->addAction(importFeedsAct_);
+  mainMenu_->addAction(exportFeedsAct_);
+  mainMenu_->addSeparator();
+  mainMenu_->addAction(createBackupAct_);
+  mainMenu_->addSeparator();
+  mainMenu_->addMenu(viewMenu_);
+  mainMenu_->addMenu(feedMenu_);
+  mainMenu_->addMenu(newsMenu_);
+  mainMenu_->addMenu(browserMenu_);
+  mainMenu_->addSeparator();
+  mainMenu_->addMenu(toolsMenu_);
   mainMenu_->addSeparator();
   mainMenu_->addMenu(helpMenu_);
   mainMenu_->addSeparator();
-#ifndef Q_OS_MAC
   mainMenu_->addAction(showMenuBarAct_);
   mainMenu_->addSeparator();
-#endif
   mainMenu_->addAction(exitAct_);
-
+#endif
 
   menuBar()->addMenu(fileMenu_);
   menuBar()->addMenu(viewMenu_);
@@ -1901,7 +1893,6 @@ void MainWindow::createMenu()
   menuBar()->addMenu(browserMenu_);
   menuBar()->addMenu(toolsMenu_);
   menuBar()->addMenu(helpMenu_);
-
 
   connect(customizeToolbarGroup_, SIGNAL(triggered(QAction*)),
           this, SLOT(showCustomizeToolbarDlg(QAction*)));
@@ -2532,7 +2523,9 @@ void MainWindow::setProxy(const QNetworkProxy proxy)
 
 void MainWindow::showMainMenu()
 {
+#ifndef Q_OS_MAC
   mainMenu_->popup(mainMenuButton_->mapToGlobal(QPoint(0, mainMenuButton_->height())));
+#endif
 }
 
 /** @brief Add feed to feed list
@@ -2547,10 +2540,8 @@ void MainWindow::addFeed()
     curFolderId = feedsModel_->paridByIndex(curIndex);
   }
 
-  AddFeedWizard *addFeedWizard = new AddFeedWizard(0, curFolderId);
+  AddFeedWizard *addFeedWizard = new AddFeedWizard(this, curFolderId);
   addFeedWizard->show();
-  addFeedWizard->raise();
-  addFeedWizard->activateWindow();
 
   int result = addFeedWizard->exec();
   if (result == QDialog::Rejected) {
@@ -4551,11 +4542,11 @@ void MainWindow::markFeedRead()
     bool openFeedT = false;
     QModelIndex index = feedsModel_->indexById(id);
     int parentId = feedsModel_->dataField(index, "parentId").toInt();
-    if ((currentNewsTab->feedId_ == id)) {
+    if (currentNewsTab->feedId_ == id) {
       openFeedT = true;
       openFeed = true;
     }
-    if ((currentNewsTab->feedParId_ == id)) {
+    if (currentNewsTab->feedParId_ == id) {
       openFeed = true;
     }
     if (currentNewsTab->feedId_ == parentId) {

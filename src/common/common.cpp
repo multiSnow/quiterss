@@ -176,14 +176,6 @@ QString Common::operatingSystem()
 {
 #ifdef Q_OS_MAC
   QString str = "Mac OS X";
-#if QT_VERSION >= 0x050400
-  SInt32 majorVersion;
-  SInt32 minorVersion;
-
-  if (Gestalt(gestaltSystemVersionMajor, &majorVersion) == noErr && Gestalt(gestaltSystemVersionMinor, &minorVersion) == noErr) {
-    str.append(QString(" %1.%2").arg(majorVersion).arg(minorVersion));
-  }
-#endif
   return str;
 #endif
 #ifdef Q_OS_LINUX
@@ -232,43 +224,43 @@ QString Common::operatingSystem()
   return "Haiku";
 #endif
 #ifdef Q_OS_WIN32
-  QString str = "Windows";
+  QString str = "Windows NT";
 
   switch (QSysInfo::windowsVersion()) {
   case QSysInfo::WV_NT:
-    str.append(" NT");
+    str.append(" 4.0");
     break;
 
   case QSysInfo::WV_2000:
-    str.append(" 2000");
+    str.append(" 5.0");
     break;
 
   case QSysInfo::WV_XP:
-    str.append(" XP");
+    str.append(" 5.1");
     break;
   case QSysInfo::WV_2003:
-    str.append(" XP Pro x64");
+    str.append(" 5.2");
     break;
 
   case QSysInfo::WV_VISTA:
-    str.append(" Vista");
+    str.append(" 6.0");
     break;
 
   case QSysInfo::WV_WINDOWS7:
-    str.append(" 7");
+    str.append(" 6.1");
     break;
 
   case QSysInfo::WV_WINDOWS8:
-    str.append(" 8");
+    str.append(" 6.2");
     break;
 #if QT_VERSION >= 0x050400
   case QSysInfo::WV_WINDOWS8_1:
-    str.append(" 8.1");
+    str.append(" 6.3");
     break;
 #endif
 #if QT_VERSION >= 0x050600
   case QSysInfo::WV_WINDOWS10:
-    str.append(" 10");
+    str.append(" 10.0");
     break;
 #endif
   default:
