@@ -284,18 +284,18 @@ void MainWindow::slotTimerLinkOpening()
  *---------------------------------------------------------------------------*/
 void MainWindow::changeEvent(QEvent *event)
 {
-  if(event->type() == QEvent::WindowStateChange) {
+  if (event->type() == QEvent::WindowStateChange) {
     isOpeningLink_ = false;
-    if(isMinimized()) {
+    if (isMinimized()) {
       oldState = ((QWindowStateChangeEvent*)event)->oldState();
     } else {
       oldState = windowState();
     }
-  } else if(event->type() == QEvent::ActivationChange) {
+  } else if (event->type() == QEvent::ActivationChange) {
     if (isActiveWindow() && (behaviorIconTray_ == CHANGE_ICON_TRAY)) {
-      traySystem->setIcon(QIcon(":/images/quiterss_128"));
+      traySystem->setIcon(QIcon(":/images/quiterss128"));
     }
-  } else if(event->type() == QEvent::LanguageChange) {
+  } else if (event->type() == QEvent::LanguageChange) {
     retranslateStrings();
   }
   QMainWindow::changeEvent(event);
@@ -646,7 +646,7 @@ void MainWindow::createStatusBar()
 // ---------------------------------------------------------------------------
 void MainWindow::createTray()
 {
-  traySystem = new QSystemTrayIcon(QIcon(":/images/quiterss16"), this);
+  traySystem = new QSystemTrayIcon(QIcon(":/images/quiterss128"), this);
   traySystem->setToolTip("QuiteRSS");
 
 #ifndef Q_OS_MAC
@@ -1441,6 +1441,18 @@ void MainWindow::createActions()
   printfriendlyShareAct_->setText("PrintFriendly");
   printfriendlyShareAct_->setIcon(QIcon(":/share/images/share/printfriendly.png"));
   shareGroup_->addAction(printfriendlyShareAct_);
+
+  instapaperShareAct_ = new QAction(this);
+  instapaperShareAct_->setObjectName("instapaperShareAct");
+  instapaperShareAct_->setText("Instapaper");
+  instapaperShareAct_->setIcon(QIcon(":/share/images/share/instapaper.png"));
+  shareGroup_->addAction(instapaperShareAct_);
+
+  redditShareAct_ = new QAction(this);
+  redditShareAct_->setObjectName("redditShareAct");
+  redditShareAct_->setText("Reddit");
+  redditShareAct_->setIcon(QIcon(":/share/images/share/reddit.ico"));
+  shareGroup_->addAction(redditShareAct_);
 
   this->addActions(shareGroup_->actions());
   connect(shareGroup_, SIGNAL(triggered(QAction*)),
@@ -3069,7 +3081,7 @@ void MainWindow::slotUpdateFeed(int feedId, bool changed, int newCount, bool fin
   // Action after new news has arrived: tray, sound
   if (!isActiveWindow() && (newCount > 0) &&
       (behaviorIconTray_ == CHANGE_ICON_TRAY)) {
-    traySystem->setIcon(QIcon(":/images/quiterss16_NewNews"));
+    traySystem->setIcon(QIcon(":/images/quiterss128_NewNews"));
   }
   emit signalRefreshInfoTray();
   if (newCount > 0)
@@ -3758,7 +3770,7 @@ void MainWindow::showOptionDlg(int index)
   if (behaviorIconTray_ > CHANGE_ICON_TRAY) {
     emit signalRefreshInfoTray();
   } else {
-    traySystem->setIcon(QIcon(":/images/quiterss_128"));
+    traySystem->setIcon(QIcon(":/images/quiterss128"));
   }
   singleClickTray_ = optionsDialog_->singleClickTray_->isChecked();
   clearStatusNew_ = optionsDialog_->clearStatusNew_->isChecked();
@@ -4730,7 +4742,7 @@ void MainWindow::restoreFeedsOnStartUp()
   // Open feeds in tabs
   QSqlQuery q;
   q.exec(QString("SELECT id, parentId FROM feeds WHERE displayOnStartup=1"));
-  while(q.next()) {
+  while (q.next()) {
     creatFeedTab(q.value(0).toInt(), q.value(1).toInt());
   }
 }
@@ -5735,32 +5747,43 @@ void MainWindow::slotRefreshInfoTray(int newCount, int unreadCount)
       if (trayCount > 99) {
         font.setBold(false);
         if (trayCount < 1000) {
-          font.setPixelSize(8);
+          font.setPixelSize(60);
           trayCountStr = QString::number(trayCount);
         } else {
-          font.setPixelSize(11);
+          font.setPixelSize(86);
           trayCountStr = "#";
         }
       } else {
         font.setBold(true);
-        font.setPixelSize(11);
+        font.setPixelSize(90);
         trayCountStr = QString::number(trayCount);
       }
 
       // Draw icon, text above it, and set this icon to tray icon
-      QPixmap icon = QPixmap(":/images/countNew");
+      QPixmap icon(128, 128);
+      icon.fill(Qt::transparent);
       QPainter trayPainter;
       trayPainter.begin(&icon);
+      trayPainter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+      trayPainter.setRenderHint(QPainter::TextAntialiasing, true);
+      QRect rectangle(0, 0, 128, 128);
+      QLinearGradient gradient(rectangle.bottomLeft(), rectangle.topLeft());
+      QColor color("#117C04");
+      gradient.setColorAt(0, color.light());
+      gradient.setColorAt(0.5, color);
+      gradient.setColorAt(1, color.light());
+      trayPainter.setBrush(gradient);
+      trayPainter.drawRoundedRect(rectangle, 20, 20);
       trayPainter.setFont(font);
-      trayPainter.setPen(Qt::white);
-      trayPainter.drawText(QRect(1, 0, 15, 16), Qt::AlignVCenter | Qt::AlignHCenter,
+      trayPainter.setPen("#FFFFFF");
+      trayPainter.drawText(rectangle, Qt::AlignVCenter | Qt::AlignHCenter,
                            trayCountStr);
       trayPainter.end();
       traySystem->setIcon(icon);
     }
     // Draw icon without number
     else {
-      traySystem->setIcon(QIcon(":/images/quiterss_128"));
+      traySystem->setIcon(QIcon(":/images/quiterss128"));
     }
   }
 }
@@ -6640,7 +6663,7 @@ void MainWindow::showNotification(bool bShowRecentNews/*=false*/)
     RECT rc;
     GetWindowRect(GetDesktopWindow(), &rc);
 
-    if((hWnd != GetDesktopWindow())
+    if ((hWnd != GetDesktopWindow())
    #ifdef HAVE_QT5
        && (hWnd != GetShellWindow())
    #endif

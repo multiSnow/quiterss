@@ -2061,7 +2061,7 @@ void NewsTabWidget::openInExternalBrowserNews()
 
 void NewsTabWidget::setNewsLayout()
 {
-  if (type_ == TabTypeDownloads) return;
+  if (type_ >= TabTypeWeb) return;
 
   switch (mainWindow_->newsLayout_) {
   case 1:
@@ -2078,7 +2078,7 @@ void NewsTabWidget::setNewsLayout()
  *----------------------------------------------------------------------------*/
 void NewsTabWidget::setBrowserPosition()
 {
-  if (type_ == TabTypeDownloads) return;
+  if (type_ >= TabTypeWeb) return;
 
   int idx = newsTabWidgetSplitter_->indexOf(webWidget_);
 
@@ -2733,6 +2733,28 @@ void NewsTabWidget::slotShareNews(QAction *action)
         url.setQuery(urlQuery);
 #else
         url.addQueryItem("url", linkString);
+#endif
+      } else if (action->objectName() == "instapaperShareAct") {
+        url.setUrl("https://www.instapaper.com/hello2");
+#ifdef HAVE_QT5
+        QUrlQuery urlQuery;
+        urlQuery.addQueryItem("url", linkString);
+        urlQuery.addQueryItem("title", title);
+        url.setQuery(urlQuery);
+#else
+        url.addQueryItem("url", linkString);
+        url.addQueryItem("title", title);
+#endif
+      } else if (action->objectName() == "redditShareAct") {
+        url.setUrl("https://reddit.com/submit");
+#ifdef HAVE_QT5
+        QUrlQuery urlQuery;
+        urlQuery.addQueryItem("url", linkString);
+        urlQuery.addQueryItem("title", title);
+        url.setQuery(urlQuery);
+#else
+        url.addQueryItem("url", linkString);
+        url.addQueryItem("title", title);
 #endif
       }
 
