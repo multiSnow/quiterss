@@ -1373,6 +1373,7 @@ void MainWindow::createActions()
   reloadWebPageAct_ = new QAction(this);
   reloadWebPageAct_->setObjectName("reloadWebPageAct");
 
+#ifdef USE_SHARENEWS
   shareGroup_ = new QActionGroup(this);
   shareGroup_->setExclusive(false);
 
@@ -1457,6 +1458,7 @@ void MainWindow::createActions()
   this->addActions(shareGroup_->actions());
   connect(shareGroup_, SIGNAL(triggered(QAction*)),
           this, SLOT(slotShareNews(QAction*)));
+#endif
 
 
   connect(markNewsRead_, SIGNAL(triggered()),
@@ -1622,7 +1624,9 @@ void MainWindow::createShortcut()
   listActions_.append(pageUpWebViewAct_);
   listActions_.append(pageDownWebViewAct_);
 
+#ifdef USE_SHARENEWS
   listActions_.append(shareGroup_->actions());
+#endif
 
   // Actions for labels do add at the end
   listActions_.append(settingPageLabelsAct_);
@@ -1794,6 +1798,7 @@ void MainWindow::createMenu()
   newsLabelAction_->setMenu(newsLabelMenu_);
   newsLabelMenuAction_->setMenu(newsLabelMenu_);
 
+#ifdef USE_SHARENEWS
   shareMenu_ = new QMenu(this);
   shareMenu_->addActions(shareGroup_->actions());
   shareMenuAct_ = new QAction(this);
@@ -1801,6 +1806,7 @@ void MainWindow::createMenu()
   shareMenuAct_->setIcon(QIcon(":/images/images/share.png"));
   shareMenuAct_->setMenu(shareMenu_);
   this->addAction(shareMenuAct_);
+#endif
 
   newsFilterGroup_ = new QActionGroup(this);
   newsFilterGroup_->setExclusive(true);
@@ -1830,7 +1836,9 @@ void MainWindow::createMenu()
   newsMenu_->addSeparator();
   newsMenu_->addAction(markStarAct_);
   newsMenu_->addAction(newsLabelMenuAction_);
+#ifdef USE_SHARENEWS
   newsMenu_->addAction(shareMenuAct_);
+#endif
   newsMenu_->addSeparator();
   newsMenu_->addAction(newsFilter_);
   newsMenu_->addMenu(newsSortByMenu_);
@@ -1919,7 +1927,9 @@ void MainWindow::createMenu()
           this, SLOT(feedsColumnVisible(QAction*)));
   connect(feedMenu_, SIGNAL(aboutToShow()), this, SLOT(slotFeedMenuShow()));
   connect(newsLabelMenu_, SIGNAL(aboutToShow()), this, SLOT(getLabelNews()));
+#ifdef USE_SHARENEWS
   connect(shareMenuAct_, SIGNAL(triggered()), this, SLOT(showMenuShareNews()));
+#endif
   connect(newsFilterGroup_, SIGNAL(triggered(QAction*)),
           this, SLOT(setNewsFilter(QAction*)));
   connect(newsFilter_, SIGNAL(triggered()), this, SLOT(slotNewsFilter()));
@@ -5092,7 +5102,9 @@ void MainWindow::retranslateStrings()
 
   settingPageLabelsAct_->setText(tr("Setting Page: Labels"));
 
+#ifdef USE_SHARENEWS
   shareMenuAct_->setText(tr("Share"));
+#endif
 
   newsSortByMenu_->setTitle(tr("Sort By"));
   newsSortOrderGroup_->actions().at(0)->setText(tr("Ascending"));
@@ -7796,6 +7808,7 @@ void MainWindow::showCustomizeToolbarDlg(QAction *action)
   delete toolbarDlg;
 }
 
+#ifdef USE_SHARENEWS
 /** @brief Process news sharing
  *---------------------------------------------------------------------------*/
 void MainWindow::slotShareNews(QAction *action)
@@ -7832,6 +7845,7 @@ void MainWindow::showMenuShareNews()
     }
   }
 }
+#endif
 
 /** @brief Open feed home page in external browser
  *---------------------------------------------------------------------------*/

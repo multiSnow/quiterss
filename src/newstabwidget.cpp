@@ -320,7 +320,9 @@ void NewsTabWidget::showContextMenuNews(const QPoint &pos)
   menu.addSeparator();
   menu.addAction(mainWindow_->markStarAct_);
   menu.addAction(mainWindow_->newsLabelMenuAction_);
+#ifdef USE_SHARENEWS
   menu.addAction(mainWindow_->shareMenuAct_);
+#endif
   menu.addAction(mainWindow_->copyLinkAct_);
   menu.addSeparator();
   menu.addAction(mainWindow_->updateFeedAct_);
@@ -371,7 +373,9 @@ void NewsTabWidget::createWebWidget()
   webToolBar_->addAction(webAction);
   webToolBar_->addSeparator();
 
+#ifdef USE_SHARENEWS
   webToolBar_->addAction(mainApp->mainWindow()->shareMenuAct_);
+#endif
 
   webExternalBrowserAct_ = new QAction(this);
   webExternalBrowserAct_->setIcon(QIcon(":/images/openBrowser"));
@@ -2601,6 +2605,7 @@ void NewsTabWidget::slotShareNews(QAction *action)
     content = content.replace("\"", "%22");
 #endif
 
+#ifdef USE_SHARENEWS
     QUrl url;
     if (action->objectName() == "emailShareAct") {
       url.setUrl("mailto:");
@@ -2763,6 +2768,7 @@ void NewsTabWidget::slotShareNews(QAction *action)
         mainWindow_->createWebTab(url);
       } else openUrl(url);
     }
+#endif
   }
 }
 //-----------------------------------------------------------------------------
@@ -2882,12 +2888,14 @@ void NewsTabWidget::actionNewspaper(QUrl url)
             indexList.first(), QItemSelectionModel::Select|QItemSelectionModel::Rows);
       currentNewsIdOld = newsId.toInt();
       mainWindow_->newsLabelMenu_->popup(QCursor::pos());
+#ifdef USE_SHARENEWS
     } else if (url.host() == "share.menu.ui") {
       newsView_->selectionModel()->clearSelection();
       newsView_->selectionModel()->select(
             indexList.first(), QItemSelectionModel::Select|QItemSelectionModel::Rows);
       currentNewsIdOld = newsId.toInt();
       mainWindow_->shareMenu_->popup(QCursor::pos());
+#endif
     } else if (url.host() == "open.browser.ui") {
       QUrl url = QUrl::fromEncoded(getLinkNews(indexList.first().row()).toUtf8());
       if (url.host().isEmpty() || (QUrl(url).host().indexOf('.') == -1)) {
