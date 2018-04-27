@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ NotificationWidget::NotificationWidget(QList<int> idFeedList,
     showButtonMarkReadNotify = mainApp->mainWindow()->showButtonMarkReadNotify_;
     showButtonExBrowserNotify = mainApp->mainWindow()->showButtonExBrowserNotify_;
     showButtonDeleteNotify = mainApp->mainWindow()->showButtonDeleteNotify_;
+    closeNotify_ = mainApp->mainWindow()->closeNotify_;
   } else {
     OptionsDialog *options = qobject_cast<OptionsDialog*>(parentWidget);
     screen_ = options->screenNotify_->currentIndex()-1;
@@ -98,6 +99,7 @@ NotificationWidget::NotificationWidget(QList<int> idFeedList,
     showButtonMarkReadNotify = options->showButtonMarkReadNotify_->isChecked();
     showButtonExBrowserNotify = options->showButtonExBrowserNotify_->isChecked();
     showButtonDeleteNotify = options->showButtonDeleteNotify_->isChecked();
+    closeNotify_ = options->closeNotify_->isChecked();
 
     for (int i = 0; i < 10; i++) {
       cntNewNewsList << 9;
@@ -297,7 +299,7 @@ NotificationWidget::NotificationWidget(QList<int> idFeedList,
         connect(newsItem, SIGNAL(signalMarkRead(int, int, int)),
                 this, SLOT(slotMarkRead(int, int, int)));
         connect(newsItem, SIGNAL(signalTitleClicked(int, int)),
-                this, SIGNAL(signalOpenNews(int, int)));
+                this, SLOT(slotOpenNew(int, int)));
         connect(newsItem, SIGNAL(signalOpenExternalBrowser(QUrl)),
                 this, SIGNAL(signalOpenExternalBrowser(QUrl)));
         connect(newsItem, SIGNAL(signalDeleteNews(int,int)),
@@ -490,6 +492,14 @@ void NotificationWidget::slotDeleteNews(int feedId, int newsId)
   emit signalDeleteNews(feedId, newsId);
 }
 
+void NotificationWidget::slotOpenNew(int feedId, int newsId)
+{
+  if (closeNotify_)
+    emit signalClose();
+  emit signalOpenNews(feedId, newsId);
+}
+
 void NotificationWidget::slotMarkAllRead()
 {
+
 }

@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -445,7 +445,7 @@ void MainApplication::setTranslateApplication()
 void MainApplication::showSplashScreen()
 {
   Settings settings;
-  int versionDB = settings.value("versionDB", "1").toInt();
+  int versionDB = settings.value("VersionDB", "1").toInt();
   if ((versionDB != Database::version()) && QFile::exists(settings.fileName()))
     showSplashScreen_ = true;
 
@@ -574,6 +574,9 @@ void MainApplication::c2fLoadSettings()
   settings.beginGroup("ClickToFlash");
   c2fWhitelist_ = settings.value("whitelist", QStringList()).toStringList();
   c2fEnabled_ = settings.value("enabled", true).toBool();
+#if QT_VERSION >= 0x050900
+  c2fEnabled_ = false;
+#endif
   settings.endGroup();
 }
 

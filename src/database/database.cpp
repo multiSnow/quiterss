@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -258,7 +258,7 @@ void Database::prepareDatabase()
       QString message = QString("Cannot open SQLite database! \n"
                                 "Error: %1").arg(db.lastError().text());
       qCritical() << message;
-      QMessageBox::critical(0, QObject::tr("Error"), message);
+      QMessageBox::critical(mainApp->mainWindow(), QObject::tr("Error"), message);
     } else {
       setPragma(db);
       QSqlQuery q(db);
