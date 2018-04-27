@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -521,7 +521,7 @@ void CleanUpWizard::finishCleanUp()
 
   accept();
 
-  QMessageBox::information(0, tr("Information"),
+  QMessageBox::information(this, tr("Information"),
                            tr("Clean Up wizard deleted %1 news").
                            arg(cleanUpThread_->countDeleted));
 }

@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,10 @@ WebPage::WebPage(QObject *parent)
           mainApp->mainWindow(), SLOT(slotPrint(QWebFrame*)));
 #endif
 
+#if QT_VERSION >= 0x050900
+  connect(this, SIGNAL(fullScreenRequested(QWebFullScreenRequest)),
+          this, SLOT(slotFullScreenRequested(QWebFullScreenRequest)));
+#endif
   livingPages_.append(this);
 }
 
@@ -285,3 +289,11 @@ void WebPage::cleanBlockedObjects()
     mainFrame()->scrollToAnchor(mainFrame()->url().fragment());
   }
 }
+
+#if QT_VERSION >= 0x050900
+void WebPage::slotFullScreenRequested(QWebFullScreenRequest fullScreenRequest)
+{
+  fullScreenRequest.accept();
+  mainApp->mainWindow()->webViewFullScreen(fullScreenRequest.toggleOn());
+}
+#endif

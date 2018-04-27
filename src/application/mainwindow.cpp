@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -527,6 +527,8 @@ void MainWindow::createFeedsWidget()
   connect(feedsView_, SIGNAL(pressKeyDown()), this, SLOT(slotFeedDownPressed()));
   connect(feedsView_, SIGNAL(pressKeyHome()), this, SLOT(slotFeedHomePressed()));
   connect(feedsView_, SIGNAL(pressKeyEnd()), this, SLOT(slotFeedEndPressed()));
+  connect(feedsView_, SIGNAL(pressKeyPageUp()), this, SLOT(slotFeedPageUpPressed()));
+  connect(feedsView_, SIGNAL(pressKeyPageDown()), this, SLOT(slotFeedPageDownPressed()));
   connect(feedsView_, SIGNAL(signalDropped(QModelIndex,int)),
           this, SLOT(slotMoveIndex(QModelIndex,int)));
   connect(feedsView_, SIGNAL(customContextMenuRequested(QPoint)),
@@ -1611,6 +1613,8 @@ void MainWindow::createShortcut()
   findTextAct_->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_F));
   listActions_.append(findTextAct_);
 
+  listActions_.append(findFeedAct_);
+
   listActions_.append(copyLinkAct_);
 
   listActions_.append(backWebPageAct_);
@@ -2110,6 +2114,7 @@ void MainWindow::loadSettings()
   showButtonMarkReadNotify_ = settings.value("showButtonMarkReadNotify", true).toBool();
   showButtonExBrowserNotify_ = settings.value("showButtonExBrowserNotify", true).toBool();
   showButtonDeleteNotify_ = settings.value("showButtonDeleteNotify", true).toBool();
+  closeNotify_ = settings.value("closeNotify", true).toBool();
 
   toolBarLockAct_->setChecked(settings.value("mainToolbarLock", true).toBool());
   lockMainToolbar(toolBarLockAct_->isChecked());
@@ -2419,6 +2424,7 @@ void MainWindow::saveSettings()
   settings.setValue("showButtonMarkReadNotify", showButtonMarkReadNotify_);
   settings.setValue("showButtonExBrowserNotify", showButtonExBrowserNotify_);
   settings.setValue("showButtonDeleteNotify", showButtonDeleteNotify_);
+  settings.setValue("closeNotify", closeNotify_);
 
   settings.setValue("mainToolbarLock", toolBarLockAct_->isChecked());
 
@@ -3495,6 +3501,7 @@ void MainWindow::showOptionDlg(int index)
   optionsDialog_->showButtonMarkReadNotify_->setChecked(showButtonMarkReadNotify_);
   optionsDialog_->showButtonExBrowserNotify_->setChecked(showButtonExBrowserNotify_);
   optionsDialog_->showButtonDeleteNotify_->setChecked(showButtonDeleteNotify_);
+  optionsDialog_->closeNotify_->setChecked(closeNotify_);
 
   optionsDialog_->setLanguage(mainApp->language());
 
@@ -3927,6 +3934,7 @@ void MainWindow::showOptionDlg(int index)
   showButtonMarkReadNotify_ = optionsDialog_->showButtonMarkReadNotify_->isChecked();
   showButtonExBrowserNotify_ = optionsDialog_->showButtonExBrowserNotify_->isChecked();
   showButtonDeleteNotify_ = optionsDialog_->showButtonDeleteNotify_->isChecked();
+  closeNotify_ = optionsDialog_->closeNotify_->isChecked();
 
   mainApp->setLanguage(optionsDialog_->language());
   mainApp->setTranslateApplication();
@@ -6098,6 +6106,38 @@ void MainWindow::slotFeedEndPressed()
   slotFeedClicked(index);
 }
 
+/** @brief Process pressing PageUp-key in feeds tree
+ *----------------------------------------------------------------------------*/
+void MainWindow::slotFeedPageUpPressed()
+{
+  int row = 0;
+  QModelIndex index = feedsView_->currentIndex();
+  if (index.isValid())
+    row = index.row() - feedsView_->verticalScrollBar()->pageStep();
+  if (row < 0)
+    row = 0;
+  index = feedsProxyModel_->index(row, "text");
+
+  feedsView_->setCurrentIndex(index);
+  slotFeedClicked(index);
+}
+
+/** @brief Process pressing PageDown-key in feeds tree
+ *----------------------------------------------------------------------------*/
+void MainWindow::slotFeedPageDownPressed()
+{
+  int row = 0;
+  QModelIndex index = feedsView_->currentIndex();
+  if (index.isValid())
+    row = index.row() + feedsView_->verticalScrollBar()->pageStep();
+  if (row >= feedsProxyModel_->rowCount())
+    row = feedsProxyModel_->rowCount()-1;
+  index = feedsProxyModel_->index(row, "text");
+
+  feedsView_->setCurrentIndex(index);
+  slotFeedClicked(index);
+}
+
 /** @brief Set application style
  *---------------------------------------------------------------------------*/
 void MainWindow::setStyleApp(QAction *pAct)
@@ -7681,7 +7721,6 @@ void MainWindow::nextUnreadNews()
       Settings settings;
       openingFeedAction_ = settings.value("/Settings/openingFeedAction", 0).toInt();
     }
-    newsView_->setCurrentIndex(newsView_->currentIndex());
     return;
   }
 
@@ -7718,7 +7757,6 @@ void MainWindow::prevUnreadNews()
       Settings settings;
       openingFeedAction_ = settings.value("/Settings/openingFeedAction", 0).toInt();
     }
-    newsView_->setCurrentIndex(newsView_->currentIndex());
     return;
   }
 
@@ -8097,4 +8135,15 @@ void MainWindow::createBackup()
         arg(timeStr);
     QFile::copy(settings.fileName(), backupFileName);
   }
+}
+
+void MainWindow::webViewFullScreen(bool on)
+{
+  setFullScreen();
+  feedsWidget_->setVisible(!on);
+  pushButtonNull_->setVisible(!on);
+  tabBarWidget_->setVisible(!on);
+  currentNewsTab->newsWidget_->setVisible(!on);
+  pushButtonNull_->setVisible(!on);
+  statusBar()->setVisible(!on);
 }

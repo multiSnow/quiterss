@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2017 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -62,6 +62,7 @@ private slots:
   void previousPage();
   void slotMarkRead(int feedId, int newsId, int read);
   void slotDeleteNews(int feedId, int newsId);
+  void slotOpenNew(int feedId, int newsId);
   void slotMarkAllRead();
 
 private:
@@ -85,6 +86,7 @@ private:
   int transparency_;
   int cntAllNews_;
   int cntReadNews_;
+  bool closeNotify_;
 
 };
 
