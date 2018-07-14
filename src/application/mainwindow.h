@@ -171,6 +171,7 @@ public:
   QAction *printfriendlyShareAct_;
   QAction *instapaperShareAct_;
   QAction *redditShareAct_;
+  QAction *hackerNewsShareAct_;
 #endif
   QAction *copyLinkAct_;
   QAction *pageUpWebViewAct_;
@@ -324,6 +325,7 @@ public slots:
 #endif
 
 signals:
+  void signalQuitApp();
   void signalPlaceToTray();
   void signalGetFeedTimer(int feedId);
   void signalGetAllFeedsTimer();

@@ -1,6 +1,9 @@
-version: 0.17.7_b{build}
+version: 0.18.10_b{build}
 
 os: unstable
+
+image:
+- Visual Studio 2013
 
 branches:
   only:
@@ -66,6 +69,7 @@ environment:
 #    QTARCHIVE2: '5.4.1-0icu_53_1_msvc_2013_32.7z'
 
 install:
+- ls C:\Qt\5.4
 # prepare extern install
 - choco install curl 7zip # dependencywalker
 - mkdir extern

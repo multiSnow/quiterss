@@ -54,7 +54,7 @@ WebPage::WebPage(QObject *parent)
           mainApp->mainWindow(), SLOT(slotPrint(QWebFrame*)));
 #endif
 
-#if QT_VERSION >= 0x050900
+#if QT_VERSION >= 0x050905
   connect(this, SIGNAL(fullScreenRequested(QWebFullScreenRequest)),
           this, SLOT(slotFullScreenRequested(QWebFullScreenRequest)));
 #endif
@@ -176,7 +176,7 @@ void WebPage::handleUnsupportedContent(QNetworkReply* reply)
       }
       mainApp->downloadManager()->handleUnsupportedContent(reply, mainApp->mainWindow()->askDownloadLocation_);
       return;
-    }
+    } // fall through
 
   case QNetworkReply::ProtocolUnknownError: {
     qDebug() << "WebPage::UnsupportedContent" << url << "ProtocolUnknowError";
@@ -290,7 +290,7 @@ void WebPage::cleanBlockedObjects()
   }
 }
 
-#if QT_VERSION >= 0x050900
+#if QT_VERSION >= 0x050905
 void WebPage::slotFullScreenRequested(QWebFullScreenRequest fullScreenRequest)
 {
   fullScreenRequest.accept();
