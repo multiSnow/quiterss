@@ -175,7 +175,7 @@ void MainWindow::quitApp()
 
   mainApp->networkManager()->disconnect(mainApp->networkManager());
   mainApp->updateFeeds()->disconnectObjects();
-  mainApp->updateFeeds()->quitApp();
+  emit signalQuitApp();
 }
 
 // ---------------------------------------------------------------------------
@@ -1451,6 +1451,12 @@ void MainWindow::createActions()
   redditShareAct_->setText("Reddit");
   redditShareAct_->setIcon(QIcon(":/share/images/share/reddit.ico"));
   shareGroup_->addAction(redditShareAct_);
+
+  hackerNewsShareAct_ = new QAction(this);
+  hackerNewsShareAct_->setObjectName("hackerNewsShareAct");
+  hackerNewsShareAct_->setText("HackerNews");
+  hackerNewsShareAct_->setIcon(QIcon(":/share/images/share/hackernews.png"));
+  shareGroup_->addAction(hackerNewsShareAct_);
 
   this->addActions(shareGroup_->actions());
   connect(shareGroup_, SIGNAL(triggered(QAction*)),
@@ -4156,7 +4162,7 @@ void MainWindow::slotGetFeed()
   foreach (QModelIndex indexProxy, indexList) {
     QModelIndex index = feedsProxyModel_->mapToSource(indexProxy);
     if (feedsModel_->isFolder(index)) {
-      QList<int> list = UpdateObject::getIdFeedsInList(feedsModel_->dataField(index, "id").toInt());
+      QList<int> list = UpdateObject::getIdFeedsInList(db_, feedsModel_->dataField(index, "id").toInt());
       foreach (int idFeed, list) {
         if (!idList.contains(idFeed)) {
           idList.append(idFeed);
@@ -4571,7 +4577,7 @@ void MainWindow::markFeedRead()
       if (currentNewsTab->feedId_ == id) {
         isFolder = true;
       }
-      QList<int> list = UpdateObject::getIdFeedsInList(id);
+      QList<int> list = UpdateObject::getIdFeedsInList(db_, id);
       foreach (int id1, list) {
         QModelIndex index1 = feedsModel_->indexById(id1);
         QModelIndex indexUnread = feedsModel_->indexSibling(index1, "unread");
@@ -5668,6 +5674,40 @@ void MainWindow::showFeedPropertiesDlg()
     q.addBindValue(feedId);
     q.exec();
     slotIconFeedUpdate(feedId, properties.general.image);
+  }
+
+  if ((properties.display.layoutDirection  != properties_tmp.display.layoutDirection) &&
+      !isFeed) {
+    QQueue<int> parentIds;
+    parentIds.enqueue(feedId);
+    while (!parentIds.empty()) {
+      int parentId = parentIds.dequeue();
+      q.exec(QString("SELECT id, xmlUrl FROM feeds WHERE parentId='%1'").arg(parentId));
+      while (q.next()) {
+        int id = q.value(0).toInt();
+        QString xmlUrl = q.value(1).toString();
+
+        QSqlQuery q1;
+        q1.prepare("UPDATE feeds SET layoutDirection = ? WHERE id == ?");
+        q1.addBindValue(properties.display.layoutDirection);
+        q1.addBindValue(id);
+        q1.exec();
+
+        QPersistentModelIndex index1 = feedsModel_->indexById(id);
+        indexRTL = feedsModel_->indexSibling(index1, "layoutDirection");
+        feedsModel_->setData(indexRTL, properties.display.layoutDirection);
+
+        for (int i = 0; i < stackedWidget_->count(); i++) {
+          NewsTabWidget *widget = (NewsTabWidget*)stackedWidget_->widget(i);
+          if (widget->feedId_ == id) {
+            widget->setSettings();
+          }
+        }
+
+        if (xmlUrl.isEmpty())
+          parentIds.enqueue(id);
+      }
+    }
   }
 
   for (int i = 0; i < stackedWidget_->count(); i++) {
@@ -7774,7 +7814,7 @@ void MainWindow::prevUnreadNews()
  *---------------------------------------------------------------------------*/
 QString MainWindow::getIdFeedsString(int idFolder, int idException)
 {
-  QList<int> idList = UpdateObject::getIdFeedsInList(idFolder);
+  QList<int> idList = UpdateObject::getIdFeedsInList(db_, idFolder);
   if (idList.count()) {
     QString str;
     foreach (int id, idList) {
