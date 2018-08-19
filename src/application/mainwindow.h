@@ -373,7 +373,7 @@ private slots:
   void mediaStatusChanged(QMediaPlayer::MediaStatus status);
   void mediaError(QMediaPlayer::Error error);
 #endif
- #ifdef HAVE_PHONON
+#ifdef HAVE_PHONON
   void mediaStateChanged(Phonon::State newstate, Phonon::State oldstate);
 #endif
 
