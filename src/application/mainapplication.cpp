@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@
 #include "common.h"
 #include "cookiejar.h"
 #include "database.h"
+#include "globals.h"
 #include "networkmanager.h"
 #include "adblockmanager.h"
 #include "settings.h"
@@ -29,12 +30,11 @@
 
 MainApplication::MainApplication(int &argc, char **argv)
   : QtSingleApplication(argc, argv)
-  , isPortable_(false)
   , isPortableAppsCom_(false)
   , isClosing_(false)
-  , dataDirInitialized_(false)
   , dbFileExists_(false)
   , translator_(0)
+  , qt_translator_(0)
   , mainWindow_(0)
   , networkManager_(0)
   , cookieJar_(0)
@@ -44,6 +44,11 @@ MainApplication::MainApplication(int &argc, char **argv)
   , analytics_(0)
 #endif
 {
+  setApplicationName("QuiteRss");
+  setOrganizationName("QuiteRss");
+  setApplicationVersion(STRPRODUCTVER);
+  globals.init();
+
   QString message = arguments().value(1);
   if (isRunning()) {
     if (argc == 1) {
@@ -62,16 +67,8 @@ MainApplication::MainApplication(int &argc, char **argv)
     }
   }
 
-  setApplicationName("QuiteRss");
-  setOrganizationName("QuiteRss");
-  setApplicationVersion(STRPRODUCTVER);
   setWindowIcon(QIcon(":/images/quiterss128"));
   setQuitOnLastWindowClosed(false);
-  QSettings::setDefaultFormat(QSettings::IniFormat);
-
-  checkPortable();
-
-  checkDir();
 
   createSettings();
 
@@ -157,63 +154,8 @@ void MainApplication::receiveMessage(const QString &message)
   }
 }
 
-void MainApplication::checkPortable()
-{
-#if defined(Q_OS_WIN)
-  isPortable_ = true;
-  QString fileName(QCoreApplication::applicationDirPath() + "/portable.dat");
-  if (!QFile::exists(fileName)) {
-    isPortable_ = false;
-  }
-  if (isPortable_) {
-    fileName = QCoreApplication::applicationDirPath() + "/../../QuiteRSSPortable.exe";
-    if (QFile::exists(fileName)) {
-      isPortableAppsCom_ = true;
-      QFile::remove(QCoreApplication::applicationDirPath() + "/Updater.exe");
-    }
-  }
-#endif
-}
-
-void MainApplication::checkDir()
-{
-#if defined(Q_OS_WIN) || defined(Q_OS_OS2)
-  resourcesDir_ = QCoreApplication::applicationDirPath();
-#else
-#if defined(Q_OS_MAC)
-  resourcesDir_ = QCoreApplication::applicationDirPath() + "/../Resources";
-#else
-  resourcesDir_ = RESOURCES_DIR;
-#endif
-#endif
-
-  if (isPortable_) {
-    dataDir_ = QCoreApplication::applicationDirPath();
-    cacheDir_ = "cache";
-    soundNotifyDir_ = "sound";
-  } else {
-#ifdef HAVE_QT5
-    dataDir_ = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
-    cacheDir_ = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-#else
-    dataDir_ = QDesktopServices::storageLocation(QDesktopServices::DataLocation);
-    cacheDir_ = QDesktopServices::storageLocation(QDesktopServices::CacheLocation);
-#endif
-    soundNotifyDir_ = resourcesDir_ % "/sound";
-
-    QDir dir(dataDir_);
-    dir.mkpath(dataDir_);
-  }
-  dataDirInitialized_ = true;
-}
-
 void MainApplication::createSettings()
 {
-  QString fileName;
-  if (isPortable_)
-    fileName = mainApp->dataDir() % "/" % QCoreApplication::applicationName() % ".ini";
-  Settings::createSettings(fileName);
-
   Settings settings;
   settings.beginGroup("Settings");
   storeDBMemory_ = settings.value("storeDBMemory", true).toBool();
@@ -221,12 +163,11 @@ void MainApplication::createSettings()
   styleApplication_ = settings.value("styleApplication", "greenStyle_").toString();
   showSplashScreen_ = settings.value("showSplashScreen", true).toBool();
   updateFeedsStartUp_ = settings.value("autoUpdatefeedsStartUp", false).toBool();
-  noDebugOutput_ = settings.value("noDebugOutput", true).toBool();
 
   QString strLang;
   QString strLocalLang = QLocale::system().name();
   bool findLang = false;
-  QDir langDir(resourcesDir_ + "/lang");
+  QDir langDir(resourcesDir() + "/lang");
   foreach (QString file, langDir.entryList(QStringList("*.qm"), QDir::Files)) {
     strLang = file.section('.', 0, 0).section('_', 1);
     if (strLocalLang == strLang) {
@@ -287,6 +228,13 @@ void MainApplication::connectDatabase()
     }
   }
 
+#if defined(HAVE_QT5) && defined(HAVE_X11)
+  fileName = "~/.local/share/data/QuiteRss/QuiteRss/feeds.db";
+  if (!QFile(dbFileName()).exists() && QFile(fileName).exists()) {
+    QFile::copy(fileName, dbFileName());
+  }
+#endif
+
   if (QFile(dbFileName()).exists()) {
     dbFileExists_ = true;
   }
@@ -344,7 +292,7 @@ void MainApplication::commitData(QSessionManager &manager)
 
 bool MainApplication::isPortable() const
 {
-  return isPortable_;
+  return globals.isPortable_;
 }
 
 bool MainApplication::isPortableAppsCom() const
@@ -362,22 +310,27 @@ bool MainApplication::isClosing() const
   return isClosing_;
 }
 
+bool MainApplication::isNoDebugOutput() const
+{
+  return globals.noDebugOutput_;
+}
+
 QString MainApplication::resourcesDir() const
 {
-  return resourcesDir_;
+  return globals.resourcesDir_;
 }
 
 QString MainApplication::dataDir() const
 {
-  return dataDir_;
+  return globals.dataDir_;
 }
 
 QString MainApplication::absolutePath(const QString &path) const
 {
   QString absolutePath = path;
-  if (isPortable_) {
+  if (isPortable()) {
     if (!QDir::isAbsolutePath(path)) {
-      absolutePath = dataDir_ % "/" % path;
+      absolutePath = dataDir() % "/" % path;
     }
   }
   return absolutePath;
@@ -385,7 +338,7 @@ QString MainApplication::absolutePath(const QString &path) const
 
 QString MainApplication::dbFileName() const
 {
-  return dataDir_ % "/feeds.db";
+  return dataDir() % "/feeds.db";
 }
 
 bool MainApplication::isSaveDataLastFeed() const
@@ -400,11 +353,13 @@ bool MainApplication::storeDBMemory() const
 
 void MainApplication::setStyleApplication()
 {
-  QString fileName(resourcesDir_);
+  QString fileName(resourcesDir());
   if (styleApplication_ == "systemStyle_") {
     fileName.append("/style/system.qss");
   } else if (styleApplication_ == "system2Style_") {
     fileName.append("/style/system2.qss");
+  } else if (styleApplication_ == "darkStyle_") {
+    fileName.append("/style/dark.qss");
   } else if (styleApplication_ == "orangeStyle_") {
     fileName.append("/style/orange.qss");
   } else if (styleApplication_ == "purpleStyle_") {
@@ -432,8 +387,18 @@ void MainApplication::setTranslateApplication()
   if (!translator_)
     translator_ = new QTranslator(this);
   removeTranslator(translator_);
-  translator_->load(resourcesDir_ + QString("/lang/quiterss_%1").arg(langFileName_));
+  translator_->load(resourcesDir() + QString("/lang/quiterss_%1").arg(langFileName_));
   installTranslator(translator_);
+
+  if (!qt_translator_)
+    qt_translator_ = new QTranslator(this);
+  removeTranslator(qt_translator_);
+#ifdef HAVE_X11
+  qt_translator_->load(QLibraryInfo::location (QLibraryInfo::TranslationsPath) + "/qtbase_" + langFileName_);
+#else
+  qt_translator_->load(resourcesDir() + "/lang/qtbase_" + langFileName_);
+#endif
+  installTranslator(qt_translator_);
 }
 
 void MainApplication::showSplashScreen()
@@ -501,8 +466,8 @@ void MainApplication::setDiskCache()
       diskCache_ = new QNetworkDiskCache(this);
     }
 
-    QString diskCacheDirPath = settings.value("dirDiskCache", cacheDir_).toString();
-    if (diskCacheDirPath.isEmpty()) diskCacheDirPath = cacheDir_;
+    QString diskCacheDirPath = settings.value("dirDiskCache", cacheDefaultDir()).toString();
+    if (diskCacheDirPath.isEmpty()) diskCacheDirPath = cacheDefaultDir();
     diskCacheDirPath = absolutePath(diskCacheDirPath);
 
     bool cleanDiskCache = settings.value("cleanDiskCache", true).toBool();
@@ -528,20 +493,29 @@ void MainApplication::setDiskCache()
 
 QString MainApplication::cacheDefaultDir() const
 {
-  return cacheDir_;
+  return globals.cacheDir_;
 }
 
 QString MainApplication::soundNotifyDefaultFile() const
 {
-  return soundNotifyDir_ % "/notification.wav";
+  return globals.soundNotifyDir_ % "/notification.wav";
 }
 
 QString MainApplication::styleSheetNewsDefaultFile() const
 {
-  if (isPortable_) {
+  if (isPortable()) {
     return "style/news.css";
   } else {
-    return resourcesDir_ % "/style/news.css";
+    return resourcesDir() % "/style/news.css";
+  }
+}
+
+QString MainApplication::styleSheetWebDarkFile() const
+{
+  if (isPortable()) {
+    return "style/web_dark.css";
+  } else {
+    return resourcesDir() % "/style/web_dark.css";
   }
 }
 

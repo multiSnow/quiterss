@@ -98,6 +98,8 @@
         <file alias="cleanup">images/cleanup.png</file>
         <file alias="quiterss128">images/128x128/quiterss.png</file>
         <file alias="quiterss128_NewNews">images/quiterss128_NewNews.png</file>
+        <file>images/bullet_down.png</file>
+        <file alias="loading_dark">images/loading_dark.gif</file>
     </qresource>
     <qresource prefix="/style">
         <file alias="systemStyle">style/system.qss</file>
@@ -157,7 +159,6 @@
         <file>images/share/blogger.png</file>
         <file>images/share/evernote.png</file>
         <file>images/share/facebook.png</file>
-        <file>images/share/gplus.png</file>
         <file>images/share/linkedin.png</file>
         <file>images/share/livejournal.png</file>
         <file>images/share/pocket.png</file>
@@ -167,5 +168,8 @@
         <file>images/share/instapaper.png</file>
         <file>images/share/reddit.ico</file>
         <file>images/share/hackernews.png</file>
+        <file>images/share/telegram.png</file>
+        <file>images/share/whatsapp.png</file>
+        <file>images/share/viber.png</file>
     </qresource>
 </RCC>

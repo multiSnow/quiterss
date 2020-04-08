@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -546,6 +546,8 @@ void MainWindow::createFeedsWidget()
           this, SLOT(slotSelectFind()));
   connect(findFeeds_, SIGNAL(returnPressed()),
           this, SLOT(slotSelectFind()));
+  connect(findFeeds_, SIGNAL(signalVisible(bool)),
+          this, SLOT(findFeedVisible(bool)));
 
   connect(categoriesTree_, SIGNAL(itemPressed(QTreeWidgetItem*,int)),
           this, SLOT(slotCategoriesClicked(QTreeWidgetItem*,int)));
@@ -572,7 +574,6 @@ void MainWindow::createToolBarNull()
   pushButtonNull_->setFixedWidth(6);
   pushButtonNull_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
   pushButtonNull_->setFocusPolicy(Qt::NoFocus);
-  pushButtonNull_->setStyleSheet("background: #E8E8E8; border: none; padding: 0px;");
 }
 // ---------------------------------------------------------------------------
 void MainWindow::createNewsTab(int index)
@@ -612,7 +613,7 @@ void MainWindow::createStatusBar()
   stopUpdateButton_->setCursor(Qt::ArrowCursor);
   stopUpdateButton_->setDefaultAction(stopUpdateAct_);
   stopUpdateButton_->setStyleSheet(
-        "QToolButton { border: none; padding: 0px; }"
+        "QToolButton { border: none; padding: 0px; background: none; }"
         "QToolButton:hover { background: rgba(150, 150, 150, 60) }"
         );
   stopUpdateButton_->move(progressBar_->rect().right() - stopUpdateButton_->sizeHint().width(),
@@ -625,13 +626,13 @@ void MainWindow::createStatusBar()
   loadImagesButton->setFocusPolicy(Qt::NoFocus);
   loadImagesButton->setIconSize(QSize(16,16));
   loadImagesButton->setDefaultAction(autoLoadImagesToggle_);
-  loadImagesButton->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  loadImagesButton->setStyleSheet("QToolButton { border: none; padding: 0px; background: none; }");
 
   QToolButton *fullScreenButton = new QToolButton(this);
   fullScreenButton->setFocusPolicy(Qt::NoFocus);
   loadImagesButton->setIconSize(QSize(16,16));
   fullScreenButton->setDefaultAction(fullScreenAct_);
-  fullScreenButton->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  fullScreenButton->setStyleSheet("QToolButton { border: none; padding: 0px; background: none; }");
   statusBar()->installEventFilter(this);
 
   statusBar()->addPermanentWidget(progressBar_);
@@ -867,6 +868,9 @@ void MainWindow::createActions()
   system2Style_ = new QAction(this);
   system2Style_->setObjectName("system2Style_");
   system2Style_->setCheckable(true);
+  darkStyle_ = new QAction(this);
+  darkStyle_->setObjectName("darkStyle_");
+  darkStyle_->setCheckable(true);
   greenStyle_ = new QAction(this);
   greenStyle_->setObjectName("greenStyle_");
   greenStyle_->setCheckable(true);
@@ -1394,12 +1398,6 @@ void MainWindow::createActions()
   evernoteShareAct_->setIcon(QIcon(":/share/images/share/evernote.png"));
   shareGroup_->addAction(evernoteShareAct_);
 
-  gplusShareAct_ = new QAction(this);
-  gplusShareAct_->setObjectName("gplusShareAct");
-  gplusShareAct_->setText("Google+");
-  gplusShareAct_->setIcon(QIcon(":/share/images/share/gplus.png"));
-  shareGroup_->addAction(gplusShareAct_);
-
   facebookShareAct_ = new QAction(this);
   facebookShareAct_->setObjectName("facebookShareAct");
   facebookShareAct_->setText("Facebook");
@@ -1465,6 +1463,18 @@ void MainWindow::createActions()
   hackerNewsShareAct_->setText("HackerNews");
   hackerNewsShareAct_->setIcon(QIcon(":/share/images/share/hackernews.png"));
   shareGroup_->addAction(hackerNewsShareAct_);
+
+  telegramShareAct_ = new QAction(this);
+  telegramShareAct_->setObjectName("telegramShareAct");
+  telegramShareAct_->setText("Telegram");
+  telegramShareAct_->setIcon(QIcon(":/share/images/share/telegram.png"));
+  shareGroup_->addAction(telegramShareAct_);
+
+  viberShareAct_ = new QAction(this);
+  viberShareAct_->setObjectName("viberShareAct");
+  viberShareAct_->setText("Vider");
+  viberShareAct_->setIcon(QIcon(":/share/images/share/viber.png"));
+  shareGroup_->addAction(viberShareAct_);
 
   this->addActions(shareGroup_->actions());
   connect(shareGroup_, SIGNAL(triggered(QAction*)),
@@ -1735,6 +1745,7 @@ void MainWindow::createMenu()
   styleGroup_ = new QActionGroup(this);
   styleGroup_->addAction(systemStyle_);
   styleGroup_->addAction(system2Style_);
+  styleGroup_->addAction(darkStyle_);
   styleGroup_->addAction(greenStyle_);
   styleGroup_->addAction(orangeStyle_);
   styleGroup_->addAction(purpleStyle_);
@@ -2081,6 +2092,8 @@ void MainWindow::loadSettings()
   notDeleteStarred_ = settings.value("notDeleteStarred", false).toBool();
   notDeleteLabeled_ = settings.value("notDeleteLabeled", false).toBool();
   markIdenticalNewsRead_ = settings.value("markIdenticalNewsRead", true).toBool();
+  avoidOldNews_ = settings.value("avoidOldNews", false).toBool();
+  avoidedOldNewsDate_ = settings.value("avoidedOldNewsDate").toDate();
 
   mainNewsFilter_ = settings.value("mainNewsFilter", "filterNewsAll_").toString();
 
@@ -2111,6 +2124,12 @@ void MainWindow::loadSettings()
   QWebSettings::globalSettings()->setAttribute(
         QWebSettings::PluginsEnabled, pluginsEnable_);
   QWebSettings::globalSettings()->setMaximumPagesInCache(maxPagesInCache_);
+#if QT_VERSION >= 0x050D02
+  QWebSettings::globalSettings()->setAttribute(
+        QWebSettings::ErrorPageEnabled, false);
+#endif
+  QWebSettings::globalSettings()->setOfflineStorageDefaultQuota(0);
+  QWebSettings::globalSettings()->setOfflineStoragePath(mainApp->dataDir());
 
   soundNewNews_ = settings.value("soundNewNews", true).toBool();
   soundNotifyPath_ = settings.value("soundNotifyPath", mainApp->soundNotifyDefaultFile()).toString();
@@ -2397,6 +2416,8 @@ void MainWindow::saveSettings()
   settings.setValue("notDeleteStarred", notDeleteStarred_);
   settings.setValue("notDeleteLabeled", notDeleteLabeled_);
   settings.setValue("markIdenticalNewsRead", markIdenticalNewsRead_);
+  settings.setValue("avoidOldNews", avoidOldNews_);
+  settings.setValue("avoidedOldNewsDate", avoidedOldNewsDate_);
 
   settings.setValue("mainNewsFilter", mainNewsFilter_);
 
@@ -3477,6 +3498,13 @@ void MainWindow::showOptionDlg(int index)
   optionsDialog_->notDeleteStarred_->setChecked(notDeleteStarred_);
   optionsDialog_->notDeleteLabeled_->setChecked(notDeleteLabeled_);
   optionsDialog_->markIdenticalNewsRead_->setChecked(markIdenticalNewsRead_);
+  optionsDialog_->avoidedOldNewsDateOn_->setChecked(avoidOldNews_);
+
+  if (!avoidedOldNewsDate_.isNull() && avoidedOldNewsDate_.isValid()) {
+    optionsDialog_->avoidedOldNewsDate_->setSelectedDate(avoidedOldNewsDate_);
+  } else {
+    optionsDialog_->avoidedOldNewsDate_->setSelectedDate(QDate::currentDate());
+  }
 
   for (int i = 0; i < optionsDialog_->mainNewsFilter_->count(); i++) {
     if (optionsDialog_->mainNewsFilter_->itemData(i).toString() == mainNewsFilter_) {
@@ -3916,6 +3944,13 @@ void MainWindow::showOptionDlg(int index)
   notDeleteStarred_ = optionsDialog_->notDeleteStarred_->isChecked();
   notDeleteLabeled_ = optionsDialog_->notDeleteLabeled_->isChecked();
   markIdenticalNewsRead_ = optionsDialog_->markIdenticalNewsRead_->isChecked();
+  avoidOldNews_ = optionsDialog_->avoidedOldNewsDateOn_->isChecked();
+
+  if (!optionsDialog_->avoidedOldNewsDate_->selectedDate().isNull() && optionsDialog_->avoidedOldNewsDate_->selectedDate().isValid()) {
+    avoidedOldNewsDate_ = optionsDialog_->avoidedOldNewsDate_->selectedDate();
+  } else {
+    avoidedOldNewsDate_ = QDate::currentDate();
+  }
 
   mainNewsFilter_ = optionsDialog_->mainNewsFilter_->itemData(
         optionsDialog_->mainNewsFilter_->currentIndex()).toString();
@@ -4998,6 +5033,7 @@ void MainWindow::retranslateStrings()
   styleMenu_->setTitle(tr("Application Style"));
   systemStyle_->setText(tr("System"));
   system2Style_->setText(tr("System2"));
+  darkStyle_->setText(tr("Dark"));
   greenStyle_->setText(tr("Green"));
   orangeStyle_->setText(tr("Orange"));
   purpleStyle_->setText(tr("Purple"));
@@ -5342,6 +5378,15 @@ void MainWindow::showFeedPropertiesDlg()
   properties.general.duplicateNewsMode =
       feedsModel_->dataField(index, "duplicateNewsMode").toBool();
 
+  properties.general.addSingleNewsAnyDateOn =
+      feedsModel_->dataField(index, "addSingleNewsAnyDateOn").toBool();
+
+  properties.general.avoidedOldSingleNewsDateOn =
+      feedsModel_->dataField(index, "avoidedOldSingleNewsDateOn").toBool();
+
+  properties.general.avoidedOldSingleNewsDate =
+      feedsModel_->dataField(index, "avoidedOldSingleNewsDate").toDate();
+
   Settings settings;
   settings.beginGroup("NewsHeader");
   QString indexColumnsStr = settings.value("columns").toString();
@@ -5466,7 +5511,8 @@ void MainWindow::showFeedPropertiesDlg()
 
   q.prepare("UPDATE feeds SET text = ?, xmlUrl = ?, displayOnStartup = ?, "
             "displayEmbeddedImages = ?, displayNews = ?, layoutDirection = ?, "
-            "label = ?, duplicateNewsMode = ?, authentication = ?, disableUpdate = ?, "
+            "label = ?, duplicateNewsMode = ?, addSingleNewsAnyDateOn = ?, avoidedOldSingleNewsDateOn = ?, avoidedOldSingleNewsDate = ?,"
+            " authentication = ?, disableUpdate = ?, "
             "javaScriptEnable = ? WHERE id == ?");
   q.addBindValue(properties.general.text);
   q.addBindValue(properties.general.url);
@@ -5479,6 +5525,9 @@ void MainWindow::showFeedPropertiesDlg()
   else
     q.addBindValue("");
   q.addBindValue(properties.general.duplicateNewsMode ? 1 : 0);
+  q.addBindValue(properties.general.addSingleNewsAnyDateOn ? 1 : 0);
+  q.addBindValue(properties.general.avoidedOldSingleNewsDateOn ? 1 : 0);
+  q.addBindValue(properties.general.avoidedOldSingleNewsDate);
   q.addBindValue(properties.authentication.on ? 1 : 0);
   q.addBindValue(properties.general.disableUpdate ? 1 : 0);
   q.addBindValue(properties.display.javaScriptEnable);
@@ -5583,6 +5632,9 @@ void MainWindow::showFeedPropertiesDlg()
   QModelIndex indexRTL     = feedsModel_->indexSibling(index, "layoutDirection");
   QModelIndex indexLabel   = feedsModel_->indexSibling(index, "label");
   QModelIndex indexDuplicate = feedsModel_->indexSibling(index, "duplicateNewsMode");
+  QModelIndex indexaddSingleNewsAnyDateOn = feedsModel_->indexSibling(index, "addSingleNewsAnyDateOn");
+  QModelIndex indexavoidedOldSingleNewsDateOn = feedsModel_->indexSibling(index, "avoidedOldSingleNewsDateOn");
+  QModelIndex indexavoidedOldSingleNewsDate = feedsModel_->indexSibling(index, "avoidedOldSingleNewsDate");
   QModelIndex indexAuthentication = feedsModel_->indexSibling(index, "authentication");
   QModelIndex indexDisableUpdate = feedsModel_->indexSibling(index, "disableUpdate");
   QModelIndex indexJavaScript = feedsModel_->indexSibling(index, "javaScriptEnable");
@@ -5594,6 +5646,9 @@ void MainWindow::showFeedPropertiesDlg()
   feedsModel_->setData(indexRTL, properties.display.layoutDirection);
   feedsModel_->setData(indexLabel, properties.general.starred ? "starred" : "");
   feedsModel_->setData(indexDuplicate, properties.general.duplicateNewsMode ? 1 : 0);
+  feedsModel_->setData(indexaddSingleNewsAnyDateOn, properties.general.addSingleNewsAnyDateOn ? 1 : 0);
+  feedsModel_->setData(indexavoidedOldSingleNewsDateOn, properties.general.avoidedOldSingleNewsDateOn ? 1 : 0);
+  feedsModel_->setData(indexavoidedOldSingleNewsDate, properties.general.avoidedOldSingleNewsDate);
   feedsModel_->setData(indexAuthentication, properties.authentication.on ? 1 : 0);
   feedsModel_->setData(indexDisableUpdate, properties.general.disableUpdate ? 1 : 0);
   feedsModel_->setData(indexJavaScript, properties.display.javaScriptEnable);
@@ -6202,11 +6257,17 @@ void MainWindow::slotFeedPageDownPressed()
  *---------------------------------------------------------------------------*/
 void MainWindow::setStyleApp(QAction *pAct)
 {
+  Settings settings;
+
+  settings.setValue("Settings/styleApplication", pAct->objectName());
+
   QString fileName(mainApp->resourcesDir());
   if (pAct->objectName() == "systemStyle_") {
     fileName.append("/style/system.qss");
   } else if (pAct->objectName() == "system2Style_") {
     fileName.append("/style/system2.qss");
+  } else if (pAct->objectName() == "darkStyle_") {
+    fileName.append("/style/dark.qss");
   } else if (pAct->objectName() == "orangeStyle_") {
     fileName.append("/style/orange.qss");
   } else if (pAct->objectName() == "purpleStyle_") {
@@ -6218,6 +6279,64 @@ void MainWindow::setStyleApp(QAction *pAct)
   } else {
     fileName.append("/style/green.qss");
   }
+
+  QString userStyleBrowser = "";
+  if (pAct->objectName() == "darkStyle_") {
+    userStyleBrowser = mainApp->styleSheetWebDarkFile();
+    feedsModel_->textColor_ = "#e1e0e1";
+    newsListTextColor_ = "#e1e0e1";
+    newsListBackgroundColor_ = "#464546";
+    newNewsTextColor_ = "#e1e0e1";
+    unreadNewsTextColor_ = "#e1e0e1";
+    newsBackgroundColor_ = "#464546";
+    newsTitleBackgroundColor_ = "#464546";
+    titleColor_ = "#e1e0e1";
+    newsTextColor_ = "#e1e0e1";
+    dateColor_ = "#a5a5a5";
+    authorColor_ = "#a5a5a5";
+    notifierTextColor_ = "#e1e0e1";
+    notifierBackgroundColor_ = "#464546";
+    transparencyNotify_ = 40;
+    alternatingRowColors_ = "#3a393a";
+  } else {
+    QString windowTextColor = qApp->palette().brush(QPalette::WindowText).color().name();
+    feedsModel_->textColor_ = windowTextColor;
+    newsListTextColor_ = windowTextColor;
+    newsListBackgroundColor_ = "";
+    newNewsTextColor_ = windowTextColor;
+    unreadNewsTextColor_ = windowTextColor;
+    newsBackgroundColor_ = "#FFFFFF";
+    newsTitleBackgroundColor_ = "#FFFFFF";
+    titleColor_ = "#0066CC";
+    newsTextColor_ = "#000000";
+    dateColor_ = "#666666";
+    authorColor_ = "#666666";
+    notifierTextColor_ = windowTextColor;
+    notifierBackgroundColor_ = "#FFFFFF";
+    transparencyNotify_ = 60;
+    alternatingRowColors_ = qApp->palette().color(QPalette::AlternateBase).name();
+  }
+
+  settings.beginGroup("Settings");
+  settings.setValue("userStyleBrowser", userStyleBrowser);
+  settings.setValue("transparencyNotify", transparencyNotify_);
+  settings.endGroup();
+  settings.beginGroup("Color");
+  settings.setValue("feedsListTextColor", feedsModel_->textColor_);
+  settings.setValue("newsListTextColor", newsListTextColor_);
+  settings.setValue("newsListBackgroundColor", newsListBackgroundColor_);
+  settings.setValue("newNewsTextColor", newNewsTextColor_);
+  settings.setValue("unreadNewsTextColor", unreadNewsTextColor_);
+  settings.setValue("titleColor", titleColor_);
+  settings.setValue("newsTextColor", newsTextColor_);
+  settings.setValue("newsTitleBackgroundColor", newsTitleBackgroundColor_);
+  settings.setValue("newsBackgroundColor", newsBackgroundColor_);
+  settings.setValue("dateColor", dateColor_);
+  settings.setValue("authorColor", authorColor_);
+  settings.setValue("notifierTextColor", notifierTextColor_);
+  settings.setValue("notifierBackgroundColor", notifierBackgroundColor_);
+  settings.setValue("alternatingRowColors", alternatingRowColors_);
+  settings.endGroup();
 
   QFile file(fileName);
   if (!file.open(QFile::ReadOnly)) {
@@ -6233,6 +6352,13 @@ void MainWindow::setStyleApp(QAction *pAct)
                 "stop: 0 %1, stop: 0.07 %2);}").
         arg(feedsPanel_->palette().background().color().name()).
         arg(qApp->palette().color(QPalette::Dark).name()));
+
+  mainApp->reloadUserStyleBrowser();
+  if (currentNewsTab != NULL) {
+    if (currentNewsTab->type_ < NewsTabWidget::TabTypeWeb)
+      currentNewsTab->newsHeader_->saveStateColumns(currentNewsTab);
+    currentNewsTab->setSettings(false);
+  }
 }
 
 /** Switch focus forward between feed tree, news list and browser
@@ -6725,8 +6851,12 @@ void MainWindow::setCurrentTab(int index, bool updateCurrentTab)
  *---------------------------------------------------------------------------*/
 void MainWindow::findText()
 {
-  if (currentNewsTab->type_ < NewsTabWidget::TabTypeWeb)
-    currentNewsTab->findText_->setFocus();
+  if (currentNewsTab->type_ < NewsTabWidget::TabTypeWeb) {
+    if (!currentNewsTab->findText_->hasFocus())
+      currentNewsTab->findText_->setFocus();
+    else
+      newsView_->setFocus();
+  }
 }
 
 /** @brief Show notification on inbox news
@@ -7043,6 +7173,7 @@ void MainWindow::findFeedVisible(bool visible)
   if (visible) {
     findFeeds_->setFocus();
   } else {
+    findFeedAct_->setChecked(false);
     findFeeds_->clear();
     // Call filter explicitly, because invisible widget don't calls it
     setFeedsFilter(false);
@@ -8145,9 +8276,9 @@ void MainWindow::addOurFeed()
   icon.save(&buffer, "PNG");
   buffer.close();
 
-  QString xmlUrl = "http://quiterss.org/en/rss.xml";
+  QString xmlUrl = "https://quiterss.org/en/rss.xml";
   if (mainApp->language() == "ru")
-    xmlUrl = "http://quiterss.org/ru/rss.xml";
+    xmlUrl = "https://quiterss.org/ru/rss.xml";
 
   QSqlQuery q;
   q.prepare("INSERT INTO feeds(text, title, xmlUrl, htmlUrl, created, parentId, rowToParent, image) "
@@ -8155,7 +8286,7 @@ void MainWindow::addOurFeed()
   q.addBindValue("QuiteRSS");
   q.addBindValue("QuiteRSS");
   q.addBindValue(xmlUrl);
-  q.addBindValue("http://quiterss.org");
+  q.addBindValue("https://quiterss.org");
   q.addBindValue(QDateTime::currentDateTimeUtc().toString(Qt::ISODate));
   q.addBindValue(0);
   q.addBindValue(0);
@@ -8199,11 +8330,12 @@ void MainWindow::createBackup()
 
 void MainWindow::webViewFullScreen(bool on)
 {
-  setFullScreen();
   feedsWidget_->setVisible(!on);
   pushButtonNull_->setVisible(!on);
   tabBarWidget_->setVisible(!on);
   currentNewsTab->newsWidget_->setVisible(!on);
+  currentNewsTab->webControlPanel_->setVisible(!on);
   pushButtonNull_->setVisible(!on);
   statusBar()->setVisible(!on);
+  setFullScreen();
 }

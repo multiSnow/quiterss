@@ -1,3 +1,29 @@
+Version 0.19.3 (29 Jan 2020)
+  * Changed: Qt 5.14.0 (Windows)
+  * Changed: SQLite 3.31.1
+  * Changed: App style: dark
+  * Fixed: Application crash (Linux)
+
+Version 0.19.2 (26 Nov 2019)
+  * Added: App style: dark
+  * Fixed: Problems with msvcp140.dll and vcruntime140.dll (Windows)
+  * Fixed: Images are not displayed in some feeds
+  * Fixed: Sometimes news filter did not work when updating feeds
+
+Version 0.19.1 (17 Nov 2019)
+  * Changed: Qt 5.13.2 (Windows)
+  * Changed: OpenSSL 1.1.1d (Windows)
+  * Fixed: Parsing of some feeds
+
+Version 0.19.0 (15 Nov 2019)
+  * Main: Switch to Qt 5.13
+  * Main: Embedded browser - WebKit 602.1
+  * Added: Calendar to avoid downloading old new
+  * Changed: SQLite 3.30.1
+  * Removed: Share. Google+
+  * Fixed: Description of some feeds
+  * Fixed: Parsing of some feeds
+
 Version 0.18.12 (02 Jul 2018)
   * Added: Share. Hacker News
   * Changed: Support for Qt 5.11 (Linux)

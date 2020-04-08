@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -15,14 +15,16 @@
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * ============================================================ */
+#include "globals.h"
 #include "mainapplication.h"
 #include "logfile.h"
-
-const bool logFileOutput = 1;
+#if defined(Q_OS_WIN)
+#include <windows.h>
+#endif
 
 int main(int argc, char **argv)
 {
-  if (logFileOutput) {
+  if (globals.logFileOutput_) {
 #if defined(HAVE_QT5)
     qInstallMessageHandler(LogFile::msgHandler);
 #else
@@ -30,6 +32,11 @@ int main(int argc, char **argv)
 #endif
   }
 
+#ifdef Q_OS_WIN
+#if _WIN32_WINNT >= 0x0600
+  SetProcessDPIAware();
+#endif
+#endif
 #if QT_VERSION >= 0x050600
   QApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 #elif QT_VERSION >= 0x050400

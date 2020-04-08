@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -17,7 +17,15 @@
 * ============================================================ */
 #include "logfile.h"
 
-#include "mainapplication.h"
+#ifdef HAVE_QT5
+#include <QStandardPaths>
+#else
+#include <QDesktopServices>
+#endif
+#include <QDir>
+
+#include "globals.h"
+#include "settings.h"
 
 LogFile::LogFile()
 {
@@ -26,18 +34,18 @@ LogFile::LogFile()
 #ifdef HAVE_QT5
 void LogFile::msgHandler(QtMsgType type, const QMessageLogContext &, const QString &msg)
 {
+  if (!globals.isInit_)
+    return;
   if (msg.startsWith("libpng warning: iCCP"))
     return;
 
   if (type == QtDebugMsg) {
-    if (mainApp->isNoDebugOutput()) return;
+    if (globals.noDebugOutput_)
+      return;
   }
 
-  if (!mainApp->dataDirInitialized())
-    return;
-
   QFile file;
-  file.setFileName(mainApp->dataDir() + "/debug.log");
+  file.setFileName(globals.dataDir_ + "/debug.log");
   QIODevice::OpenMode openMode = QIODevice::WriteOnly | QIODevice::Text;
 
   if (file.exists() && (file.size() < (qint64)maxLogFileSize)) {
@@ -77,15 +85,18 @@ void LogFile::msgHandler(QtMsgType type, const QMessageLogContext &, const QStri
 #else
 void LogFile::msgHandler(QtMsgType type, const char *msg)
 {
+  if (!globals.isInit_)
+    return;
   if (QString::fromUtf8(msg) == "QFont::setPixelSize: Pixel size <= 0 (0)")
     return;
 
   if (type == QtDebugMsg) {
-    if (mainApp->isNoDebugOutput()) return;
+    if (globals.noDebugOutput_)
+      return;
   }
 
   QFile file;
-  file.setFileName(mainApp->dataDir() + "/debug.log");
+  file.setFileName(globals.dataDir_ + "/debug.log");
   QIODevice::OpenMode openMode = QIODevice::WriteOnly | QIODevice::Text;
 
   if (file.exists() && (file.size() < (qint64)maxLogFileSize)) {

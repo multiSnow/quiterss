@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,8 @@
 #endif
 #include <qtsingleapplication.h>
 #include <QNetworkDiskCache>
+#include <QLocale>
+#include <QLibraryInfo>
 
 #include "cookiejar.h"
 #include "downloadmanager.h"
@@ -52,9 +54,8 @@ public:
   bool isPortableAppsCom() const;
   void setClosing();
   bool isClosing() const;
-  bool isNoDebugOutput() const { return noDebugOutput_; }
+  bool isNoDebugOutput() const;
   void showClosingWidget();
-  bool dataDirInitialized() const { return dataDirInitialized_; }
 
   QString resourcesDir() const;
   QString dataDir() const;
@@ -63,6 +64,7 @@ public:
   QString cacheDefaultDir() const;
   QString soundNotifyDefaultFile() const;
   QString styleSheetNewsDefaultFile() const;
+  QString styleSheetWebDarkFile() const;
 
   bool storeDBMemory() const;
   bool dbFileExists() const { return dbFileExists_; }
@@ -106,8 +108,6 @@ private slots:
   void commitData(QSessionManager &manager);
 
 private:
-  void checkPortable();
-  void checkDir();
   void createSettings();
 #ifdef USE_ANALYTICS
   void createGoogleAnalytics();
@@ -121,15 +121,8 @@ private:
 
   QUrl userStyleSheet(const QString &filePath) const;
 
-  bool isPortable_;
   bool isPortableAppsCom_;
   bool isClosing_;
-  bool dataDirInitialized_;
-
-  QString resourcesDir_;
-  QString dataDir_;
-  QString cacheDir_;
-  QString soundNotifyDir_;
 
   bool storeDBMemory_;
   bool dbFileExists_;
@@ -137,9 +130,9 @@ private:
   QString styleApplication_;
   bool showSplashScreen_;
   bool updateFeedsStartUp_;
-  bool noDebugOutput_;
 
   QTranslator *translator_;
+  QTranslator *qt_translator_;
   QString langFileName_;
   SplashScreen *splashScreen_;
   MainWindow *mainWindow_;

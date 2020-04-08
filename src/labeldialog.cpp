@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ LabelDialog::LabelDialog(QWidget *parent)
   iconMenu->addAction(newIcon);
 
   iconButton_ = new QToolButton(this);
+  iconButton_->setObjectName("ToolButton");
   iconButton_->setIconSize(QSize(16, 16));
   iconButton_->setPopupMode(QToolButton::MenuButtonPopup);
   iconButton_->setMenu(iconMenu);
@@ -46,6 +47,7 @@ LabelDialog::LabelDialog(QWidget *parent)
   colorTextMenu->addAction(tr("Select color..."));
 
   colorTextButton_ = new QToolButton(this);
+  colorTextButton_->setObjectName("ToolButton");
   colorTextButton_->setIconSize(QSize(16, 16));
   colorTextButton_->setPopupMode(QToolButton::MenuButtonPopup);
   colorTextButton_->setMenu(colorTextMenu);
@@ -56,6 +58,7 @@ LabelDialog::LabelDialog(QWidget *parent)
   colorBgMenu->addAction(tr("Select color..."));
 
   colorBgButton_ = new QToolButton(this);
+  colorBgButton_->setObjectName("ToolButton");
   colorBgButton_->setIconSize(QSize(16, 16));
   colorBgButton_->setPopupMode(QToolButton::MenuButtonPopup);
   colorBgButton_->setMenu(colorBgMenu);

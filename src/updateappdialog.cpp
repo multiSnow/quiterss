@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -70,8 +70,8 @@ UpdateAppDialog::UpdateAppDialog(const QString &lang, QWidget *parent, bool show
 
     QString urlHistory;
     if (lang_.contains("ru", Qt::CaseInsensitive))
-      urlHistory = "http://quiterss.org/files/updates_new/HISTORY_RU";
-    else urlHistory = "http://quiterss.org/files/updates_new/HISTORY_EN";
+      urlHistory = "https://quiterss.org/files/updates_new/HISTORY_RU";
+    else urlHistory = "https://quiterss.org/files/updates_new/HISTORY_EN";
     historyReply_ = networkManagerProxy_->get(QNetworkRequest(QUrl(urlHistory)));
     connect(historyReply_, SIGNAL(finished()), this, SLOT(slotFinishHistoryReply()));
 
@@ -126,18 +126,15 @@ void UpdateAppDialog::finishUpdatesChecking()
 
     if (version.contains(curVersion)) {
       str =
-          "<a><font color=#4b4b4b>" +
-          tr("You already have the latest version") +
-          "</a>";
+          tr("You already have the latest version");
     } else {
       QString urlDownloads;
       if (lang_.contains("ru", Qt::CaseInsensitive))
-        urlDownloads = "http://quiterss.org/ru/download";
-      else urlDownloads = "http://quiterss.org/en/download";
+        urlDownloads = "https://quiterss.org/ru/download";
+      else urlDownloads = "https://quiterss.org/en/download";
 
       str =
-          "<a><font color=#FF8040>" +
-          tr("A new version of QuiteRSS is available!") + "</a>"
+          tr("A new version of QuiteRSS is available!") +
           "<p>" + QString("<a href=\"%1\">%2</a>").
           arg(urlDownloads).
           arg(tr("Click here to go to the download page"));
@@ -221,7 +218,7 @@ void UpdateAppDialog::renderStatistics()
   Settings settings;
   bool updateCheckEnabled = settings.value("Settings/updateCheckEnabled", true).toBool();
   if (updateCheckEnabled || showDialog_) {
-    QNetworkRequest request(QUrl("http://quiterss.org/files/updates_new/VersionNo.h"));
+    QNetworkRequest request(QUrl("https://quiterss.org/files/updates_new/VersionNo.h"));
     reply_ = networkManagerProxy_->get(request);
     connect(reply_, SIGNAL(finished()), this, SLOT(finishUpdatesChecking()));
   } else {

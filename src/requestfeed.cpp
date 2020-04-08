@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,9 @@
 #include "requestfeed.h"
 #include "VersionNo.h"
 #include "mainapplication.h"
+#include "globals.h"
 
 #include <QDebug>
-#ifdef HAVE_QT5
-#include <QWebPage>
-#else
-#include <qwebkitversion.h>
-#endif
 #include <QtSql>
 #include <qzregexp.h>
 
@@ -33,6 +29,7 @@
 RequestFeed::RequestFeed(int timeoutRequest, int numberRequests,
                          int numberRepeats, QObject *parent)
   : QObject(parent)
+  , networkManager_(NULL)
   , timeoutRequest_(timeoutRequest)
   , numberRequests_(numberRequests)
   , numberRepeats_(numberRepeats)
@@ -47,10 +44,6 @@ RequestFeed::RequestFeed(int timeoutRequest, int numberRequests,
   getUrlTimer_->setSingleShot(true);
   getUrlTimer_->setInterval(50);
   connect(getUrlTimer_, SIGNAL(timeout()), this, SLOT(getQueuedUrl()));
-
-  networkManager_ = new NetworkManager(true, this);
-  connect(networkManager_, SIGNAL(finished(QNetworkReply*)),
-          this, SLOT(finished(QNetworkReply*)));
 
   connect(this, SIGNAL(signalHead(QUrl,int,QString,QDateTime,int)),
           SLOT(slotHead(QUrl,int,QString,QDateTime,int)),
@@ -68,7 +61,8 @@ RequestFeed::~RequestFeed()
 void RequestFeed::disconnectObjects()
 {
   disconnect(this);
-  networkManager_->disconnect(networkManager_);
+  if (networkManager_)
+    networkManager_->disconnect(networkManager_);
 }
 
 /** @brief Put URL in request queue
@@ -76,6 +70,12 @@ void RequestFeed::disconnectObjects()
 void RequestFeed::requestUrl(int id, QString urlString,
                               QDateTime date, QString userInfo)
 {
+  if (!networkManager_) {
+    networkManager_ = new NetworkManager(true, this);
+    connect(networkManager_, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(finished(QNetworkReply*)));
+  }
+
   if (!timeout_->isActive())
     timeout_->start();
 
@@ -150,11 +150,9 @@ void RequestFeed::getQueuedUrl()
 void RequestFeed::slotHead(const QUrl &getUrl, const int &id, const QString &feedUrl,
                             const QDateTime &date, const int &count)
 {
-  qDebug() << objectName() << "::head:" << getUrl.toEncoded() << "feed:" << feedUrl;
+  qDebug() << objectName() << "::head:" << getUrl.toEncoded() << "feed:" << feedUrl << count;
   QNetworkRequest request(getUrl);
-  QString userAgent = QString("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/%1 (KHTML, like Gecko) QuiteRSS/%2 Safari/%1").
-      arg(qWebKitVersion()).arg(STRPRODUCTVER);
-  request.setRawHeader("User-Agent", userAgent.toUtf8());
+  request.setRawHeader("User-Agent", globals.userAgent().toUtf8());
 
   currentUrls_.append(getUrl);
   currentIds_.append(id);
@@ -175,12 +173,10 @@ void RequestFeed::slotHead(const QUrl &getUrl, const int &id, const QString &fee
 void RequestFeed::slotGet(const QUrl &getUrl, const int &id, const QString &feedUrl,
                            const QDateTime &date, const int &count)
 {
-  qDebug() << objectName() << "::get:" << getUrl.toEncoded() << "feed:" << feedUrl;
+  qDebug() << objectName() << "::get:" << getUrl.toEncoded() << "feed:" << feedUrl << count;
   QNetworkRequest request(getUrl);
   request.setRawHeader("Accept", "application/atom+xml,application/rss+xml;q=0.9,application/xml;q=0.8,text/xml;q=0.7,*/*;q=0.6");
-  QString userAgent = QString("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/%1 (KHTML, like Gecko) QuiteRSS/%2 Safari/%1").
-      arg(qWebKitVersion()).arg(STRPRODUCTVER);
-  request.setRawHeader("User-Agent", userAgent.toUtf8());
+  request.setRawHeader("User-Agent", globals.userAgent().toUtf8());
 
   currentUrls_.append(getUrl);
   currentIds_.append(id);
@@ -253,19 +249,31 @@ void RequestFeed::finished(QNetworkReply *reply)
             emit signalGet(replyUrl, feedId, feedUrl, feedDate);
           } else {
             QString host(QUrl::fromEncoded(feedUrl.toUtf8()).host());
+            if (redirectionTarget.host().isEmpty()) {
+              if (redirectionTarget.path() == ".") {
+                if (redirectionTarget.hasQuery()) {
+#if QT_VERSION >= 0x050000
+                  QString query = redirectionTarget.query();
+                  redirectionTarget.setUrl(replyUrl.scheme() + "://" + host + replyUrl.path());
+                  redirectionTarget.setQuery(query);
+#else
+                  QByteArray query = redirectionTarget.encodedQuery();
+                  redirectionTarget.setUrl(replyUrl.scheme() + "://" + host + replyUrl.path());
+                  redirectionTarget.setEncodedQuery(query);
+#endif
+                }
+              } else {
+                redirectionTarget.setUrl(replyUrl.scheme() + "://" + host + redirectionTarget.toString());
+              }
+            }
+            if (redirectionTarget.scheme().isEmpty())
+              redirectionTarget.setScheme(QUrl(feedUrl).scheme());
             if (reply->operation() == QNetworkAccessManager::HeadOperation) {
-              qDebug() << objectName() << "  head redirect...";
-              if (redirectionTarget.host().isEmpty())
-                redirectionTarget.setUrl("http://" + host + redirectionTarget.toString());
-              if (redirectionTarget.scheme().isEmpty())
-                redirectionTarget.setScheme(QUrl(feedUrl).scheme());
+              qDebug() << objectName() << "  head redirect..." << redirectionTarget.toString();
               emit signalHead(redirectionTarget, feedId, feedUrl, feedDate, count);
-            } else {
-              qDebug() << objectName() << "  get redirect...";
-              if (redirectionTarget.host().isEmpty())
-                redirectionTarget.setUrl("http://" + host + redirectionTarget.toString());
-              if (redirectionTarget.scheme().isEmpty())
-                redirectionTarget.setScheme(QUrl(feedUrl).scheme());
+            }
+            else {
+              qDebug() << objectName() << "  get redirect..." << redirectionTarget.toString();
               emit signalGet(redirectionTarget, feedId, feedUrl, feedDate, count);
             }
           }
@@ -280,7 +288,7 @@ void RequestFeed::finished(QNetworkReply *reply)
         qDebug() << feedDate.toMSecsSinceEpoch() << replyDate.toMSecsSinceEpoch() << replyLocalDate.toMSecsSinceEpoch();
         if ((reply->operation() == QNetworkAccessManager::HeadOperation) &&
             ((!feedDate.isValid()) || (!replyLocalDate.isValid()) ||
-             (feedDate < replyLocalDate) || !replyDate.toMSecsSinceEpoch())) {
+             (feedDate != replyLocalDate) || !replyDate.toMSecsSinceEpoch())) {
           emit signalGet(replyUrl, feedId, feedUrl, feedDate);
         }
         else {

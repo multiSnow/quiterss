@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,9 @@ NetworkManager::NetworkManager(bool isThread, QObject* parent)
   qRegisterMetaType<QList<QSslError> >("QList<QSslError>");
 #endif
 
+  connect(this, SIGNAL(sslErrors(QNetworkReply*, QList<QSslError>)),
+          this, SLOT(slotSslError(QNetworkReply*, QList<QSslError>)));
+
   if (isThread) {
     connect(this, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
             mainApp->networkManager(), SLOT(slotAuthentication(QNetworkReply*,QAuthenticator*)),
@@ -65,16 +68,12 @@ NetworkManager::NetworkManager(bool isThread, QObject* parent)
     connect(this, SIGNAL(proxyAuthenticationRequired(QNetworkProxy,QAuthenticator*)),
             mainApp->networkManager(), SLOT(slotProxyAuthentication(QNetworkProxy,QAuthenticator*)),
             Qt::BlockingQueuedConnection);
-    connect(this, SIGNAL(sslErrors(QNetworkReply*, QList<QSslError>)),
-            mainApp->networkManager(), SLOT(slotSslError(QNetworkReply*, QList<QSslError>)),
-            Qt::BlockingQueuedConnection);
+
   } else {
     connect(this, SIGNAL(authenticationRequired(QNetworkReply*,QAuthenticator*)),
             SLOT(slotAuthentication(QNetworkReply*,QAuthenticator*)));
     connect(this, SIGNAL(proxyAuthenticationRequired(QNetworkProxy,QAuthenticator*)),
             SLOT(slotProxyAuthentication(QNetworkProxy,QAuthenticator*)));
-    connect(this, SIGNAL(sslErrors(QNetworkReply*, QList<QSslError>)),
-            SLOT(slotSslError(QNetworkReply*, QList<QSslError>)));
 
     loadSettings();
   }
@@ -200,7 +199,8 @@ static inline uint qHash(const QSslCertificate &cert)
 
 void NetworkManager::slotSslError(QNetworkReply *reply, QList<QSslError> errors)
 {
-  if (ignoreAllWarnings_ || reply->property("downloadReply").toBool()) {
+  if (ignoreAllWarnings_ || reply->property("downloadReply").toBool() ||
+      (mainApp->networkManager() != this)) {
     reply->ignoreSslErrors(errors);
     return;
   }

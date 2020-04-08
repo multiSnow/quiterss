@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -162,7 +162,6 @@ public:
   QAction *shareMenuAct_;
   QAction *emailShareAct_;
   QAction *evernoteShareAct_;
-  QAction *gplusShareAct_;
   QAction *facebookShareAct_;
   QAction *livejournalShareAct_;
   QAction *pocketShareAct_;
@@ -174,6 +173,8 @@ public:
   QAction *instapaperShareAct_;
   QAction *redditShareAct_;
   QAction *hackerNewsShareAct_;
+  QAction *telegramShareAct_;
+  QAction *viberShareAct_;
 #endif
   QAction *copyLinkAct_;
   QAction *pageUpWebViewAct_;
@@ -239,6 +240,8 @@ public:
   bool notDeleteStarred_;
   bool notDeleteLabeled_;
   bool markIdenticalNewsRead_;
+  bool avoidOldNews_;
+  QDate avoidedOldNewsDate_;
 
   bool autoLoadImages_;
   bool openLinkInBackground_;
@@ -586,6 +589,7 @@ private:
   QAction *layoutToggle_;
   QAction *systemStyle_;
   QAction *system2Style_;
+  QAction *darkStyle_;
   QAction *greenStyle_;
   QAction *orangeStyle_;
   QAction *purpleStyle_;

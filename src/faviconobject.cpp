@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,10 @@
 #include "faviconobject.h"
 #include "VersionNo.h"
 #include "mainapplication.h"
+#include "globals.h"
 
 #include <QDebug>
 #include <QtSql>
-#ifdef HAVE_QT5
-#include <QWebPage>
-#else
-#include <qwebkitversion.h>
-#endif
 #include <qzregexp.h>
 
 #define REPLY_MAX_COUNT 4
@@ -33,6 +29,7 @@
 
 FaviconObject::FaviconObject(QObject *parent)
   : QObject(parent)
+  , networkManager_(NULL)
 {
   setObjectName("faviconObject_");
 
@@ -47,22 +44,25 @@ FaviconObject::FaviconObject(QObject *parent)
 
   connect(this, SIGNAL(signalGet(QUrl,QString,int)),
           SLOT(slotGet(QUrl,QString,int)));
-
-  networkManager_ = new NetworkManager(true, this);
-  connect(networkManager_, SIGNAL(finished(QNetworkReply*)),
-          this, SLOT(finished(QNetworkReply*)));
 }
 
 void FaviconObject::disconnectObjects()
 {
   disconnect(this);
-  networkManager_->disconnect(networkManager_);
+  if (networkManager_)
+    networkManager_->disconnect(networkManager_);
 }
 
 /** @brief Put requested URL in request queue
  *----------------------------------------------------------------------------*/
 void FaviconObject::requestUrl(QString urlString, QString feedUrl)
 {
+  if (!networkManager_) {
+    networkManager_ = new NetworkManager(true, this);
+    connect(networkManager_, SIGNAL(finished(QNetworkReply*)),
+            this, SLOT(finished(QNetworkReply*)));
+  }
+
   if (!timeout_->isActive())
     timeout_->start();
 
@@ -113,9 +113,7 @@ void FaviconObject::getQueuedUrl()
 void FaviconObject::slotGet(const QUrl &getUrl, const QString &feedUrl, const int &cnt)
 {
   QNetworkRequest request(getUrl);
-  QString userAgent = QString("Mozilla/5.0 (Windows NT 6.1) AppleWebKit/%1 (KHTML, like Gecko) QuiteRSS/%2 Safari/%1").
-      arg(qWebKitVersion()).arg(STRPRODUCTVER);
-  request.setRawHeader("User-Agent", userAgent.toUtf8());
+  request.setRawHeader("User-Agent", globals.userAgent().toUtf8());
 
   currentUrls_.append(getUrl);
   currentFeeds_.append(feedUrl);

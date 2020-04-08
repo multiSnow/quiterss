@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -109,16 +109,23 @@ void ParseObject::slotParse(const QByteArray &xmlData, const int &feedId,
 
   db_.transaction();
 
-  // extract feed id and duplicate news mode from feed table
+  // extract feed id, duplicate news mode and date to avoid from feed table
   parseFeedId_ = feedId;
   QString feedUrl;
   duplicateNewsMode_ = false;
+  addSingleNewsAnyDate_ = false;
+  avoidedOldSingleNews_ = false;
+  avoidedOldSingleNewsDate_ = QDate::currentDate();
   QSqlQuery q(db_);
   q.setForwardOnly(true);
-  q.exec(QString("SELECT duplicateNewsMode, xmlUrl FROM feeds WHERE id=='%1'").arg(parseFeedId_));
+  q.exec(QString("SELECT duplicateNewsMode, xmlUrl, addSingleNewsAnyDateOn, avoidedOldSingleNewsDateOn, avoidedOldSingleNewsDate"
+                 " FROM feeds WHERE id=='%1'").arg(parseFeedId_));
   if (q.first()) {
     duplicateNewsMode_ = q.value(0).toBool();
     feedUrl = q.value(1).toString();
+    addSingleNewsAnyDate_ = q.value(2).toBool();
+    avoidedOldSingleNews_ = q.value(3).toBool();
+    avoidedOldSingleNewsDate_ = q.value(4).toDate();
   }
 
   // id not found (ex. feed deleted while updating)
@@ -133,6 +140,7 @@ void ParseObject::slotParse(const QByteArray &xmlData, const int &feedId,
 
   // actually parsing
   feedChanged_ = false;
+  lastBuildDate_ = dtReply;
 
   bool codecOk = false;
   QString convertData(xmlData);
@@ -238,7 +246,7 @@ void ParseObject::slotParse(const QByteArray &xmlData, const int &feedId,
   // Set feed update time and receive data from server time
   QString updated = QLocale::c().toString(QDateTime::currentDateTimeUtc(),
                                           "yyyy-MM-ddTHH:mm:ss");
-  QString lastBuildDate = dtReply.toString(Qt::ISODate);
+  QString lastBuildDate = lastBuildDate_.toString(Qt::ISODate);
   q.prepare("UPDATE feeds SET updated=?, lastBuildDate=?, status=0 WHERE id=?");
   q.addBindValue(updated);
   q.addBindValue(lastBuildDate);
@@ -303,6 +311,10 @@ void ParseObject::parseAtom(const QString &feedUrl, const QDomDocument &doc)
   if (QUrl(feedItem.link).host().isEmpty())
     feedItem.link = feedItem.linkBase + feedItem.link;
   feedItem.link = toPlainText(feedItem.link);
+  QUrl url = QUrl(feedItem.link);
+  if (url.scheme().isEmpty())
+    url.setScheme(QUrl(feedUrl).scheme());
+  feedItem.link = url.toString();
 
   QSqlQuery q(db_);
   q.setForwardOnly(true);
@@ -341,6 +353,11 @@ void ParseObject::parseAtom(const QString &feedUrl, const QDomDocument &doc)
     }
 
     newsItem.description = newsList.item(i).namedItem("summary").toElement().text();
+    QDomNode nodeSummary = newsList.item(i).namedItem("summary");
+    if (!nodeSummary.isNull() && newsItem.description.isEmpty()) {
+      QTextStream in(&newsItem.description);
+      nodeSummary.save(in, 0);
+    }
     QDomNode nodeContent = newsList.item(i).namedItem("content");
     if (nodeContent.toElement().attribute("type") == "xhtml") {
       QTextStream in(&newsItem.content);
@@ -348,20 +365,30 @@ void ParseObject::parseAtom(const QString &feedUrl, const QDomDocument &doc)
     } else {
       newsItem.content = nodeContent.toElement().text();
     }
-    if (newsItem.content.isEmpty()) {
-      nodeContent = newsList.item(i).namedItem("media:group");
-      if (!nodeContent.isNull()) {
-        QString description = nodeContent.namedItem("media:description").toElement().text();
-        QString media = nodeContent.namedItem("media:thumbnail").toElement().attribute("url");
-        newsItem.content += "<p class=\"description\">" + description + "</p>";
-        newsItem.content += "<img src=\"" + media + "\" alt=\"image\"/>";
-      }
+    QString imgUrl = newsList.item(i).namedItem("media:thumbnail").toElement().attribute("url");
+    QString community = getCommunity(newsList.item(i).namedItem("media:community"));
+    nodeContent = newsList.item(i).namedItem("media:group");
+    if (!nodeContent.isNull()) {
+      QString description = nodeContent.namedItem("media:description").toElement().text();
+      if (description.length() > newsItem.content.length())
+        newsItem.content = description;
+      newsItem.content = fromPlainText(newsItem.content);
+      if (imgUrl.isEmpty())
+        imgUrl = nodeContent.namedItem("media:thumbnail").toElement().attribute("url");
+      if (community.isEmpty())
+        community = getCommunity(nodeContent.namedItem("media:community"));
     }
     if (!(newsItem.content.isEmpty() ||
           (newsItem.description.length() > newsItem.content.length()))) {
       newsItem.description = newsItem.content;
     }
     newsItem.content.clear();
+    if (!imgUrl.isEmpty()) {
+      newsItem.description = "<p class=\"description\">" + newsItem.description + "</p>";
+      newsItem.description += "<img src=\"" + imgUrl + "\" alt=\"image\"/>";
+    }
+    if (!community.isEmpty())
+      newsItem.description += community;
 
     QDomNodeList categoryElem = newsList.item(i).toElement().elementsByTagName("category");
     for (int j = 0; j < categoryElem.size(); j++) {
@@ -408,6 +435,10 @@ void ParseObject::parseAtom(const QString &feedUrl, const QDomDocument &doc)
       newsItem.link = newsItem.linkAlternate;
       newsItem.linkAlternate.clear();
     }
+    url = QUrl(newsItem.link);
+    if (url.scheme().isEmpty())
+      url.setScheme(QUrl(feedUrl).scheme());
+    newsItem.link = url.toString();
 
     addAtomNewsIntoBase(&newsItem);
   }
@@ -453,8 +484,21 @@ void ParseObject::addAtomNewsIntoBase(NewsItemStruct *newsItem)
     if (isDuplicate) break;
   }
 
-  // if duplicates not found, add news into base
-  if (!isDuplicate) {
+  // Verify old news before a date to avoid adding them to base
+  bool isOld = false;
+  QDateTime pubDate_ = QDateTime::fromString(newsItem->updated, "yyyy-MM-ddTHH:mm:ss");
+  QDateTime avoidedDate_ = QDateTime(mainApp->mainWindow()->avoidedOldNewsDate_);
+  if (!addSingleNewsAnyDate_) {      //
+    if (avoidedOldSingleNews_ ) {     // avoid adding old single news
+      if (QDateTime(avoidedOldSingleNewsDate_) > pubDate_)
+        isOld = true;
+      } else if (mainApp->mainWindow()->avoidOldNews_ && avoidedDate_ > pubDate_) {   // avoid adding old news
+        isOld = true;
+      }
+   }
+
+  // if duplicates not found and is old news, add them into base
+  if (!isDuplicate && !isOld) {
     bool read = false;
     if (mainApp->mainWindow()->markIdenticalNewsRead_) {
       q.prepare("SELECT id FROM news WHERE title LIKE :title AND feedId!=:id");
@@ -516,6 +560,9 @@ void ParseObject::addAtomNewsIntoBase(NewsItemStruct *newsItem)
     qDebug() << "       " << newsItem->eUrl;
     qDebug() << "       " << newsItem->eType;
     qDebug() << "       " << newsItem->eLength;
+
+    if (lastBuildDate_ < QDateTime::fromString(newsItem->updated, Qt::ISODate))
+      lastBuildDate_ = QDateTime::fromString(newsItem->updated, Qt::ISODate);
     feedChanged_ = true;
   }
 }
@@ -602,12 +649,41 @@ void ParseObject::parseRss(const QString &feedUrl, const QDomDocument &doc)
     newsItem.link = url.toString();
 
     newsItem.description = newsList.item(i).namedItem("description").toElement().text();
+    QDomNode nodeSummary = newsList.item(i).namedItem("description");
+    if (!nodeSummary.isNull() && newsItem.description.isEmpty()) {
+      QTextStream in(&newsItem.description);
+      nodeSummary.save(in, 0);
+    }
     newsItem.content = newsList.item(i).namedItem("content:encoded").toElement().text();
-    if (newsItem.content.isEmpty() || (newsItem.description.length() > newsItem.content.length())) {
-      newsItem.content.clear();
-    } else {
+    QDomNode nodeContent = newsList.item(i).namedItem("content:encoded");
+    if (!nodeContent.isNull() && newsItem.content.isEmpty()) {
+      QTextStream in(&newsItem.content);
+      nodeContent.save(in, 0);
+    }
+    QString imgUrl = newsList.item(i).namedItem("media:thumbnail").toElement().attribute("url");
+    QString community = getCommunity(newsList.item(i).namedItem("media:community"));
+    nodeContent = newsList.item(i).namedItem("media:group");
+    if (!nodeContent.isNull()) {
+      QString description = nodeContent.namedItem("media:description").toElement().text();
+      if (description.length() > newsItem.content.length())
+        newsItem.content = description;
+      newsItem.content = fromPlainText(newsItem.content);
+      if (imgUrl.isEmpty())
+        imgUrl = nodeContent.namedItem("media:thumbnail").toElement().attribute("url");
+      if (community.isEmpty())
+        community = getCommunity(nodeContent.namedItem("media:community"));
+    }
+    if (!(newsItem.content.isEmpty() ||
+          (newsItem.description.length() > newsItem.content.length()))) {
       newsItem.description = newsItem.content;
     }
+    newsItem.content.clear();
+    if (!imgUrl.isEmpty()) {
+      newsItem.description = "<p class=\"description\">" + newsItem.description + "</p>";
+      newsItem.description += "<img src=\"" + imgUrl + "\" alt=\"image\"/>";
+    }
+    if (!community.isEmpty())
+      newsItem.description += community;
 
     QDomNodeList categoryElem = newsList.item(i).toElement().elementsByTagName("category");
     for (int j = 0; j < categoryElem.size(); j++) {
@@ -720,8 +796,21 @@ void ParseObject::addRssNewsIntoBase(NewsItemStruct *newsItem)
     if (isDuplicate) break;
   }
 
-  // if duplicates not found, add news into base
-  if (!isDuplicate) {
+  // Verify old news before a date to avoid adding them to base
+  bool isOld = false;
+  QDateTime pubDate_ = QDateTime::fromString(newsItem->updated, "yyyy-MM-ddTHH:mm:ss");
+  QDateTime avoidedDate_ = QDateTime(mainApp->mainWindow()->avoidedOldNewsDate_);
+  if (!addSingleNewsAnyDate_) {      //
+    if (avoidedOldSingleNews_ ) {     // avoid adding old single news
+      if (QDateTime(avoidedOldSingleNewsDate_) > pubDate_)
+        isOld = true;
+      } else if (mainApp->mainWindow()->avoidOldNews_ && avoidedDate_ > pubDate_) {   // avoid adding old news
+              isOld = true;
+      }
+   }
+
+ // if duplicates not found And old news, add them into base
+ if (!isDuplicate && !isOld) {
     bool read = false;
     if (mainApp->mainWindow()->markIdenticalNewsRead_) {
       q.prepare("SELECT id FROM news WHERE title LIKE :title AND feedId!=:id");
@@ -776,6 +865,9 @@ void ParseObject::addRssNewsIntoBase(NewsItemStruct *newsItem)
     qDebug() << "       " << newsItem->eUrl;
     qDebug() << "       " << newsItem->eType;
     qDebug() << "       " << newsItem->eLength;
+
+    if (lastBuildDate_ < QDateTime::fromString(newsItem->updated, Qt::ISODate))
+      lastBuildDate_ = QDateTime::fromString(newsItem->updated, Qt::ISODate);
     feedChanged_ = true;
   }
 }
@@ -783,6 +875,33 @@ void ParseObject::addRssNewsIntoBase(NewsItemStruct *newsItem)
 QString ParseObject::toPlainText(const QString &text)
 {
   return QTextDocumentFragment::fromHtml(text).toPlainText().simplified();
+}
+
+QString ParseObject::fromPlainText(QString text)
+{
+  text = text.replace("\r\n", "<br>");
+  text = text.replace("\n", "<br>");
+  return text;
+}
+
+QString ParseObject::getCommunity(const QDomNode &nodeContent)
+{
+  QString community;
+  if (!nodeContent.isNull()) {
+    QString count = nodeContent.namedItem("media:starRating").toElement().attribute("count");
+    QString average = nodeContent.namedItem("media:starRating").toElement().attribute("average");
+    QString min = nodeContent.namedItem("media:starRating").toElement().attribute("min");
+    QString max = nodeContent.namedItem("media:starRating").toElement().attribute("max");
+    QString views = nodeContent.namedItem("media:statistics").toElement().attribute("views");
+    if (!count.isEmpty())
+      community = QString("Count: %1, average: %2, min: %3, max: %4<br>").
+          arg(count).arg(average).arg(min).arg(max);
+    if (!views.isEmpty())
+      community += QString("Views: %1").arg(views);
+    if (!community.isEmpty())
+      community = "<p><i>" + community + "</i></p>";
+  }
+  return community;
 }
 
 /** @brief Date/time string parsing
@@ -888,10 +1007,10 @@ QString ParseObject::parseDate(const QString &dateString, const QString &urlStri
 void ParseObject::runUserFilter(int feedId, int filterId)
 {
   QSqlQuery q(db_);
-  bool onlyNew = true;
+  bool isAllFilters = true;
 
   if (filterId != -1) {
-    onlyNew = false;
+    isAllFilters = false;
     q.exec(QString("SELECT enable, type FROM filters WHERE id='%1' AND feeds LIKE '%,%2,%'").
            arg(filterId).arg(feedId));
   } else {
@@ -900,9 +1019,9 @@ void ParseObject::runUserFilter(int feedId, int filterId)
   }
 
   while (q.next()) {
-    if ((q.value(0).toInt() == 0) && onlyNew) continue;
+    if ((q.value(0).toInt() == 0) && isAllFilters) continue;
 
-    if (onlyNew)
+    if (isAllFilters)
       filterId = q.value(2).toInt();
     int filterType = q.value(1).toInt();
 
@@ -951,8 +1070,6 @@ void ParseObject::runUserFilter(int feedId, int filterId)
       qStr.append(qStr1);
 
     whereStr = QString(" WHERE feedId='%1' AND deleted=0").arg(feedId);
-
-    if (onlyNew) whereStr.append(" AND new=1");
 
     qStr2.clear();
     switch (filterType) {

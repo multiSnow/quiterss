@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -61,6 +61,7 @@ QWidget *FeedPropertiesDialog::createGeneralTab()
   QHBoxLayout *layoutGeneralTitle = new QHBoxLayout();
   editTitle = new LineEdit();
   ToolButton *loadTitleButton = new ToolButton();
+  loadTitleButton->setObjectName("ToolButton");
   loadTitleButton->setIcon(QIcon(":/images/updateFeed"));
   loadTitleButton->setIconSize(QSize(16, 16));
   loadTitleButton->setToolTip(tr("Load Title"));
@@ -71,6 +72,7 @@ QWidget *FeedPropertiesDialog::createGeneralTab()
   selectIconMenu->addSeparator();
   selectIconMenu->addAction(tr("Select Icon..."));
   selectIconButton_ = new QToolButton(this);
+  selectIconButton_->setObjectName("ToolButton");
   selectIconButton_->setIconSize(QSize(16, 16));
   selectIconButton_->setToolTip(tr("Select Icon"));
   selectIconButton_->setFocusPolicy(Qt::NoFocus);
@@ -129,6 +131,24 @@ QWidget *FeedPropertiesDialog::createGeneralTab()
   layoutGeneralGrid->addWidget(labelURLCapt, 1, 0);
   layoutGeneralGrid->addWidget(editURL, 1, 1);
 
+  addSingleNewsAnyDateOn_ = new QCheckBox(tr("Add news with any date into the database"));
+  addSingleNewsAnyDateOn_->setCheckable(true);
+  addSingleNewsAnyDateOn_->setChecked(false);
+
+  avoidedOldSingleNewsDate_ = new QCalendarWidget();
+  avoidedOldSingleNewsDate_->setSelectedDate(QDate::currentDate());
+  avoidedOldSingleNewsDate_->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
+  avoidedOldSingleNewsDate_->setHorizontalHeaderFormat(QCalendarWidget::SingleLetterDayNames);
+  QHBoxLayout *avoidedOldNewsDateLayout = new QHBoxLayout();
+  avoidedOldNewsDateLayout->setMargin(5);
+  avoidedOldNewsDateLayout->addWidget(avoidedOldSingleNewsDate_);
+  avoidedOldNewsDateLayout->addStretch();
+
+  avoidedOldSingleNewsDateOn_ = new QGroupBox(tr("Avoid adding news before this date into the database:"));
+  avoidedOldSingleNewsDateOn_->setCheckable(true);
+  avoidedOldSingleNewsDateOn_->setChecked(false);
+  avoidedOldSingleNewsDateOn_->setLayout(avoidedOldNewsDateLayout);
+
   QVBoxLayout *tabLayout = new QVBoxLayout(tab);
   tabLayout->setMargin(10);
   tabLayout->setSpacing(5);
@@ -141,7 +161,15 @@ QWidget *FeedPropertiesDialog::createGeneralTab()
   tabLayout->addWidget(starredOn_);
   tabLayout->addWidget(displayOnStartup);
   tabLayout->addWidget(duplicateNewsMode_);
+  tabLayout->addSpacing(15);
+  tabLayout->addWidget(addSingleNewsAnyDateOn_);
+  tabLayout->addWidget(avoidedOldSingleNewsDateOn_);
   tabLayout->addStretch();
+
+  connect(addSingleNewsAnyDateOn_, SIGNAL(toggled(bool)),
+          this, SLOT(setGroupBoxCheckboxState(bool)));
+  connect(addSingleNewsAnyDateOn_, SIGNAL(toggled(bool)),
+          avoidedOldSingleNewsDateOn_, SLOT(setDisabled(bool)));
 
   connect(loadTitleButton, SIGNAL(clicked()), this, SLOT(setDefaultTitle()));
   connect(selectIconButton_, SIGNAL(clicked()),
@@ -160,6 +188,9 @@ QWidget *FeedPropertiesDialog::createGeneralTab()
     labelHomepage->hide();
     starredOn_->hide();
     duplicateNewsMode_->hide();
+    addSingleNewsAnyDateOn_->hide();
+    avoidedOldSingleNewsDateOn_->hide();
+    avoidedOldSingleNewsDate_->hide();
   }
 
   return tab;
@@ -376,6 +407,10 @@ QWidget *FeedPropertiesDialog::createStatusTab()
   starredOn_->setChecked(feedProperties.general.starred);
   duplicateNewsMode_->setChecked(feedProperties.general.duplicateNewsMode);
 
+  addSingleNewsAnyDateOn_->setChecked(feedProperties.general.addSingleNewsAnyDateOn);
+  avoidedOldSingleNewsDateOn_->setChecked(feedProperties.general.avoidedOldSingleNewsDateOn);
+  avoidedOldSingleNewsDate_->setSelectedDate(feedProperties.general.avoidedOldSingleNewsDate);
+
   loadImagesOn_->setCheckState((Qt::CheckState)feedProperties.display.displayEmbeddedImages);
   javaScriptEnable_->setCheckState((Qt::CheckState)feedProperties.display.javaScriptEnable);
   showDescriptionNews_->setChecked(!feedProperties.display.displayNews);
@@ -500,8 +535,6 @@ void FeedPropertiesDialog::slotFaviconUpdate(const QString &feedUrl, const QByte
 //------------------------------------------------------------------------------
 FEED_PROPERTIES FeedPropertiesDialog::getFeedProperties()
 {
-  feedProperties = feedProperties;
-
   feedProperties.general.text = editTitle->text();
   feedProperties.general.url = editURL->text();
 
@@ -517,6 +550,13 @@ FEED_PROPERTIES FeedPropertiesDialog::getFeedProperties()
   feedProperties.display.displayNews = !showDescriptionNews_->isChecked();
   feedProperties.general.duplicateNewsMode = duplicateNewsMode_->isChecked();
   feedProperties.display.layoutDirection = layoutDirection_->isChecked();
+  feedProperties.general.addSingleNewsAnyDateOn = addSingleNewsAnyDateOn_->isChecked();
+  feedProperties.general.avoidedOldSingleNewsDateOn = avoidedOldSingleNewsDateOn_->isChecked();
+  if (!avoidedOldSingleNewsDate_->selectedDate().isNull() && avoidedOldSingleNewsDate_->selectedDate().isValid()) {
+    feedProperties.general.avoidedOldSingleNewsDate = avoidedOldSingleNewsDate_->selectedDate();
+  } else {
+    feedProperties.general.avoidedOldSingleNewsDate = QDate::currentDate();
+  }
 
   feedProperties.column.columns.clear();
   for (int i = 0; i < columnsTree_->topLevelItemCount(); ++i) {
@@ -639,4 +679,13 @@ void FeedPropertiesDialog::defaultColumns()
       sortByColumnBox_->setCurrentIndex(i);
   }
   sortOrderBox_->setCurrentIndex(feedProperties.columnDefault.sortType);
+}
+//------------------------------------------------------------------------------
+void FeedPropertiesDialog::setGroupBoxCheckboxState(bool _on)
+{
+  if (_on) {
+    avoidedOldSingleNewsDateOn_->setChecked(false);
+  } else {
+    avoidedOldSingleNewsDateOn_->setChecked(true);
+  }
 }

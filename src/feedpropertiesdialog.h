@@ -1,6 +1,6 @@
 /* ============================================================
  * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
- * Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+ * Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@ typedef struct {
     int displayOnStartup; //!< Flag to display feed on startup in sepatare tab
     bool starred; //!< Starred feed (favourite)
     bool duplicateNewsMode; //!< Automatically delete news duplicates
+    bool avoidedOldSingleNewsDateOn; //!< Avoid adding news before this date into the database
+    bool addSingleNewsAnyDateOn; //!< Add news with any date into the database
+    QDate avoidedOldSingleNewsDate; //!< Date to avoid
   } general;
 
   //! Autthentication properties
@@ -144,6 +147,7 @@ private slots:
   void moveUpColumn();
   void moveDownColumn();
   void defaultColumns();
+  void setGroupBoxCheckboxState(bool _on);
 
 private:
   QTabWidget *tabWidget;
@@ -160,6 +164,9 @@ private:
   QCheckBox *displayOnStartup;
   QCheckBox *starredOn_;
   QCheckBox *duplicateNewsMode_;
+  QCheckBox *addSingleNewsAnyDateOn_;
+  QGroupBox *avoidedOldSingleNewsDateOn_;
+  QCalendarWidget *avoidedOldSingleNewsDate_;
 
   QWidget *createGeneralTab();
 

@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -103,6 +103,8 @@ private:
   void parseAtom(const QString &feedUrl, const QDomDocument &doc);
   void parseRss(const QString &feedUrl, const QDomDocument &doc);
   QString toPlainText(const QString &text);
+  QString fromPlainText(QString text);
+  QString getCommunity(const QDomNode &nodeContent);
   QString parseDate(const QString &dateString, const QString &urlString);
   int recountFeedCounts(int feedId, const QString &feedUrl,
                         const QString &updated, const QString &lastBuildDate);
@@ -118,11 +120,16 @@ private:
   int parseFeedId_;
   bool duplicateNewsMode_;
   bool feedChanged_;
+  bool addSingleNewsAnyDate_;
+  bool avoidedOldSingleNews_;
+  QDate avoidedOldSingleNewsDate_;
 
   QStringList guidList_;
   QStringList linkList_;
   QStringList titleList_;
   QStringList publishedList_;
+
+  QDateTime lastBuildDate_;
 
 };
 

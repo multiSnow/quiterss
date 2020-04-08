@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@ FindFeed::FindFeed(QWidget *parent)
   findButton_->setIcon(QIcon(findPixmap));
   findButton_->setIconSize(findPixmap.size());
   findButton_->setCursor(Qt::ArrowCursor);
-  findButton_->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  findButton_->setStyleSheet("QToolButton { border: none; padding: 0px; background: none; }");
 
   findGroup_ = new QActionGroup(this);
   findGroup_->setExclusive(true);
@@ -55,14 +55,14 @@ FindFeed::FindFeed(QWidget *parent)
   clearButton_->setIcon(QIcon(pixmap));
   clearButton_->setIconSize(pixmap.size());
   clearButton_->setCursor(Qt::ArrowCursor);
-  clearButton_->setStyleSheet("QToolButton { border: none; padding: 0px; }");
+  clearButton_->setStyleSheet("QToolButton { border: none; padding: 0px; background: none; }");
   clearButton_->hide();
   connect(clearButton_, SIGNAL(clicked()), this, SLOT(slotClear()));
   connect(this, SIGNAL(textChanged(const QString&)),
           SLOT(updateClearButton(const QString&)));
 
   findLabel_ = new QLabel(this);
-  findLabel_->setStyleSheet("QLabel { color: gray; }");
+  findLabel_->setStyleSheet("QLabel { color: gray; background: none; }");
 
   int frameWidth = style()->pixelMetric(QStyle::PM_DefaultFrameWidth);
   setStyleSheet(QString("QLineEdit { padding-right: %1px; padding-left: %2px; }").
@@ -83,6 +83,14 @@ void FindFeed::retranslateStrings()
     findLabel_->hide();
     findLabel_->show();
   }
+}
+
+void FindFeed::keyPressEvent(QKeyEvent *event)
+{
+  if (event->key() == Qt::Key_Escape) {
+    emit signalVisible(false);
+  }
+  QLineEdit::keyPressEvent(event);
 }
 
 void FindFeed::resizeEvent(QResizeEvent *)

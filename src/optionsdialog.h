@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2018 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -160,6 +160,9 @@ public:
   QCheckBox *cleanUpDeleted_;
   QCheckBox *optimizeDB_;
 
+  QGroupBox *avoidedOldNewsDateOn_;
+  QCalendarWidget *avoidedOldNewsDate_;
+
   // labels
   QStringList idLabels_;
   QTreeWidget *labelsTree_;
@@ -285,6 +288,7 @@ private:
   QWidget *languageWidget_;
   QTabWidget *fontsColorsWidget_;
   QWidget *shortcutWidget_;
+  QWidget *avoidOldNewsWidget_;
 
   // general
   void createGeneralWidget();
