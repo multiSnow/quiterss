@@ -192,7 +192,9 @@ public:
 
   QActionGroup *newsFilterGroup_;
   QActionGroup *newsLabelGroup_;
+#ifdef USE_SHARENEWS
   QActionGroup *shareGroup_;
+#endif
 
   QMenu *newsLabelMenu_;
 #ifdef USE_SHARENEWS
