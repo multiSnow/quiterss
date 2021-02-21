@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ NewsTabWidget::NewsTabWidget(QWidget *parent, TabType type, int feedId, int feed
             QString("QSplitter::handle {background: qlineargradient("
                     "x1: 0, y1: 0, x2: 0, y2: 1,"
                     "stop: 0 %1, stop: 0.07 %2);}").
-            arg(newsPanelWidget_->palette().background().color().name()).
+            arg(newsPanelWidget_->palette().window().color().name()).
             arg(qApp->palette().color(QPalette::Dark).name()));
     } else {
       newsTabWidgetSplitter_->setOrientation(Qt::Vertical);
@@ -417,6 +417,8 @@ void NewsTabWidget::createWebWidget()
   webWidget_->setObjectName("webWidget_");
   webWidget_->setLayout(webLayout);
   webWidget_->setMinimumWidth(400);
+  webWidget_->setMinimumHeight(100);
+  setWebWidgetVisible();
 
   webView_->page()->action(QWebPage::OpenLink)->disconnect();
   webView_->page()->action(QWebPage::OpenLinkInNewWindow)->disconnect();
@@ -455,6 +457,8 @@ void NewsTabWidget::createWebWidget()
           this, SLOT(setAutoLoadImages()));
   connect(mainWindow_->browserToolbarToggle_, SIGNAL(triggered()),
           this, SLOT(setWebToolbarVisible()));
+  connect(mainWindow_->webWidgetVisibleAct_, SIGNAL(triggered()),
+          this, SLOT(setWebWidgetVisible()));
 
   connect(locationBar_, SIGNAL(returnPressed()),this, SLOT(slotUrlEnter()));
   connect(webView_, SIGNAL(rssChanged(bool)), locationBar_, SLOT(showRssIcon(bool)));
@@ -2111,7 +2115,7 @@ void NewsTabWidget::setBrowserPosition()
           QString("QSplitter::handle {background: qlineargradient("
                   "x1: 0, y1: 0, x2: 0, y2: 1,"
                   "stop: 0 %1, stop: 0.07 %2);}").
-          arg(newsPanelWidget_->palette().background().color().name()).
+          arg(newsPanelWidget_->palette().window().color().name()).
           arg(qApp->palette().color(QPalette::Dark).name()));
     break;
   default:
@@ -2120,6 +2124,8 @@ void NewsTabWidget::setBrowserPosition()
           QString("QSplitter::handle {background: %1; margin-top: 1px; margin-bottom: 1px;}").
           arg(qApp->palette().color(QPalette::Dark).name()));
   }
+
+  newsTabWidgetSplitter_->setChildrenCollapsible(false);
 }
 
 /** @brief Close tab while press X-button
@@ -2386,7 +2392,13 @@ void NewsTabWidget::setWebToolbarVisible(bool show, bool checked)
   if (!checked) webToolbarShow_ = show;
   webControlPanel_->setVisible(webToolbarShow_ &
                                mainWindow_->browserToolbarToggle_->isChecked());
+}
 
+void NewsTabWidget::setWebWidgetVisible()
+{
+  if (type_ >= TabTypeWeb) return;
+
+  webWidget_->setVisible(mainWindow_->webWidgetVisibleAct_->isChecked());
 }
 
 /** @brief Set label for selected news

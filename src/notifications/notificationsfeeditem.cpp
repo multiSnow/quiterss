@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -51,7 +51,11 @@ void FeedItem::setIcon(const QPixmap &icon)
 
 void FeedItem::setTitle(const QString &text, int cntNews)
 {
-  int wight = titleLabel_->fontMetrics().width(QString(" (%1)").arg(cntNews));
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+  const int wight = titleLabel_->fontMetrics().horizontalAdvance(QString(" (%1)").arg(cntNews));
+#else
+  const int wight = titleLabel_->fontMetrics().width(QString(" (%1)").arg(cntNews));
+#endif
   QString titleStr = titleLabel_->fontMetrics().elidedText(
         text, Qt::ElideRight, titleLabel_->sizeHint().width() - wight);
   titleLabel_->setText(QString("%1 (%2)").arg(titleStr).arg(cntNews));

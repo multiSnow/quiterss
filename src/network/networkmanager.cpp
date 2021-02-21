@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,7 @@
 #include "cabundleupdater.h"
 
 #include <QNetworkReply>
+#include <QSslConfiguration>
 #include <QSslSocket>
 #include <QDebug>
 
@@ -102,10 +103,13 @@ void NetworkManager::loadSettings()
     QFile(":data/bundle_version").copy(bundleVersionPath);
     QFile(bundleVersionPath).setPermissions(QFile::ReadUser | QFile::WriteUser);
   }
-
-  QSslSocket::setDefaultCaCertificates(QSslCertificate::fromPath(bundlePath));
+  QSslConfiguration::defaultConfiguration().setCaCertificates(QSslCertificate::fromPath(bundlePath));
+#else
+#if QT_VERSION >= QT_VERSION_CHECK(5,5,0)
+  QSslConfiguration::defaultConfiguration().setCaCertificates(QSslConfiguration::systemCaCertificates());
 #else
   QSslSocket::setDefaultCaCertificates(QSslSocket::systemCaCertificates());
+#endif
 #endif
 
   loadCertificates();
@@ -120,7 +124,7 @@ void NetworkManager::loadCertificates()
   settings.endGroup();
 
   // CA Certificates
-  caCerts_ = QSslSocket::defaultCaCertificates();
+  caCerts_ = QSslConfiguration::defaultConfiguration().caCertificates();
 
   foreach (const QString &path, certPaths_) {
 #ifdef Q_OS_WIN
@@ -159,8 +163,7 @@ void NetworkManager::loadCertificates()
 #else
   localCerts_ = QSslCertificate::fromPath(mainApp->dataDir() + "/certificates/*.crt", QSsl::Pem, QRegExp::Wildcard);
 #endif
-
-  QSslSocket::setDefaultCaCertificates(caCerts_ + localCerts_);
+  QSslConfiguration::defaultConfiguration().setCaCertificates(caCerts_ + localCerts_);
 
 #if defined(Q_OS_WIN) || defined(Q_OS_OS2)
   new CaBundleUpdater(this, this);
@@ -370,9 +373,9 @@ void NetworkManager::removeLocalCertificate(const QSslCertificate &cert)
 {
   localCerts_.removeOne(cert);
 
-  QList<QSslCertificate> certs = QSslSocket::defaultCaCertificates();
+  QList<QSslCertificate> certs = QSslConfiguration::defaultConfiguration().caCertificates();;
   certs.removeOne(cert);
-  QSslSocket::setDefaultCaCertificates(certs);
+  QSslConfiguration::defaultConfiguration().setCaCertificates(certs);
 
   // Delete cert file from profile
   bool deleted = false;

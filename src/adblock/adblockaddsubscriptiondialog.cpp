@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ AdBlockAddSubscriptionDialog::AdBlockAddSubscriptionDialog(QWidget* parent)
                        << Subscription("Peter Lowe's list (English)", "http://pgl.yoyo.org/adservers/serverlist.php?hostformat=adblockplus&mimetype=plaintext")
                        << Subscription("PLgeneral (Polish)", "http://www.niecko.pl/adblock/adblock.txt")
                        << Subscription("Schacks Adblock Plus liste (Danish)", "https://adblock.schack.dk/block.txt")
-                       << Subscription("Xfiles (Italian)", "http://mozilla.gfsolone.com/filtri.txt")
+                       << Subscription("Xfiles (Italian)", "https://raw.githubusercontent.com/gioxx/xfiles/master/filtri.txt")
                        << Subscription("EasyPrivacy (English)", "https://easylist-downloads.adblockplus.org/easyprivacy.txt")
                        << Subscription("Antisocial (English)", "https://raw.githubusercontent.com/Hubird-au/Adversity/master/Antisocial.txt")
                        << Subscription("RuAdList+EasyList (Russian, Ukrainian)", "https://easylist-downloads.adblockplus.org/ruadlist+easylist.txt")
