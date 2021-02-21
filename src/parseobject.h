@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@
 #include <QQueue>
 #include <QObject>
 #include <QUrl>
+#include <QMutex>
 
 struct FeedItemStruct {
   QString title;
@@ -111,7 +112,7 @@ private:
 
   QSqlDatabase db_;
   QTimer *parseTimer_;
-  int currentFeedId_;
+  QMutex mutex_;
   QQueue<int> idsQueue_;
   QQueue<QByteArray> xmlsQueue_;
   QQueue<QDateTime> dtReadyQueue_;

@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -87,7 +87,12 @@ QVariant NewsModel::data(const QModelIndex &index, int role) const
       return mainWindow->feedsModel_->dataField(feedIndex, "text").toString();
     } else if (QSqlTableModel::fieldIndex("title") == index.column()) {
       QString title = index.data(Qt::EditRole).toString();
-      if ((view_->header()->sectionSize(index.column()) - 14) < view_->header()->fontMetrics().width(title))
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+      const int fontMetricsWidth = view_->header()->fontMetrics().horizontalAdvance(title);
+#else
+      const int fontMetricsWidth = view_->header()->fontMetrics().width(title);
+#endif
+      if ((view_->header()->sectionSize(index.column()) - 14) < fontMetricsWidth)
         return title;
     }
     return QString("");

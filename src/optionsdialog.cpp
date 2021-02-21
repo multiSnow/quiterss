@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -168,16 +168,21 @@ OptionsDialog::OptionsDialog(QWidget *parent)
 
 void OptionsDialog::showEvent(QShowEvent*event)
 {
-  int desktopWidth = QApplication::desktop()->availableGeometry().width();
-  int desktopHeight = QApplication::desktop()->availableGeometry().height();
+#ifdef HAVE_QT5
+  const QRect screenGeometry = QGuiApplication::primaryScreen()->availableGeometry();
+#else
+  const QRect screenGeometry = QApplication::desktop()->availableGeometry();
+#endif
+  int desktopWidth = screenGeometry.width();
+  int desktopHeight = screenGeometry.height();
   int maxWidth = desktopWidth - (frameSize().width() - width());
   int maxHeight = desktopHeight - (frameSize().height() - height());
 
   setMaximumSize(maxWidth, maxHeight);
 
   if (frameSize().height() >= desktopHeight) {
-    QPoint point = QPoint(QApplication::desktop()->availableGeometry().topLeft().x(),
-                          QApplication::desktop()->availableGeometry().topLeft().y());
+    QPoint point = QPoint(screenGeometry.topLeft().x(),
+                          screenGeometry.topLeft().y());
     move(point);
   }
 
@@ -1110,11 +1115,16 @@ void OptionsDialog::createNotifierWidget()
   showNotifyOn_->setChecked(false);
 
   screenNotify_ = new QComboBox();
-  screenNotify_->addItem("-1");
-  for (int i = 0; i < QApplication::desktop()->screenCount(); ++i) {
+
+#ifdef HAVE_QT5
+  const int screenCount = QApplication::screens().size();
+#else
+  const int screenCount = QApplication::desktop()->screenCount();
+#endif
+  for (int i = 0; i < screenCount; ++i) {
     screenNotify_->addItem(QString::number(i));
   }
-  screenNotify_->setCurrentIndex(1);
+  screenNotify_->setCurrentIndex(0);
 
   positionNotify_ = new QComboBox();
   QStringList positionList;
@@ -1377,7 +1387,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "bg" << QString::fromUtf8("Български [BG]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("Nikolai Tsvetkov") << "koko@cybcom.net";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_BG"));
@@ -1433,7 +1443,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "fr" << QString::fromUtf8("Français [FR]")
-           << "0.19.3"
+           << "0.19.4"
            << "Glad Deschrijver" << "glad.deschrijver@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_FR"));
@@ -1457,7 +1467,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "hu" << QString::fromUtf8("Magyar [HU]")
-           << "0.19.3"
+           << "0.19.4"
            << "ZityiSoft" << "zityisoft@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_HU"));
@@ -1465,7 +1475,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "it" << QString::fromUtf8("Italiano [IT]")
-           << "0.19.3"
+           << "0.19.4"
            << "ZeroWis" << "lightflash@hotmail.it";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_IT"));
@@ -1473,7 +1483,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "ja" << QString::fromUtf8("日本語 [JA]")
-           << "0.19.3"
+           << "0.19.4"
            << "Masato Hashimoto" << "cabezon.hashimoto@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_JA"));
@@ -1481,7 +1491,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "ko" << QString::fromUtf8("한국어 [KO]")
-           << "0.18.12"
+           << "0.19.4"
            << QString::fromUtf8("Yonghee Lee") << "v4321v@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_KO"));
@@ -1497,7 +1507,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "nl" << QString::fromUtf8("Nederlands [NL]")
-           << "0.19.3"
+           << "0.19.4"
            << "TeLLie" << "elbert.pol@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_NL"));
@@ -1513,7 +1523,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "pt_BR" << QString::fromUtf8("Português (Brazil) [pt_BR]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("Marcos M. Ribeiro") << "";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_BR"));
@@ -1545,7 +1555,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "sk" << QString::fromUtf8("Slovenčina [SK]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("DAG Software (Ďanovský Ján)") << "dagsoftware@yahoo.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_SK"));
@@ -1577,7 +1587,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "tr" << QString::fromUtf8("Türkçe [TR]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("Mert Başaranoğlu") << "mertbasaranoglu@gmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_TR"));
@@ -1585,7 +1595,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "uk" << QString::fromUtf8("Українська [UK]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("Сергій Левицький") << "leon21sl@yandex.ua";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_UK"));
@@ -1609,7 +1619,7 @@ void OptionsDialog::createLanguageWidget()
 
   treeItem.clear();
   treeItem << "zh_TW" << QString::fromUtf8("中文 (Taiwan) [zh_TW]")
-           << "0.19.3"
+           << "0.19.4"
            << QString::fromUtf8("Hulen (破滅刃)") << "shift0106@hotmail.com";
   languageItem = new QTreeWidgetItem(treeItem);
   languageItem->setIcon(1, QIcon(":/flags/flag_TW"));
@@ -2419,9 +2429,9 @@ void OptionsDialog::loadLabels()
     QTreeWidgetItem *treeWidgetItem = new QTreeWidgetItem(strTreeItem);
     treeWidgetItem->setIcon(1, QIcon(imageLabel));
     if (!colorText.isEmpty())
-      treeWidgetItem->setTextColor(1, QColor(colorText));
+      treeWidgetItem->setForeground(1, QColor(colorText));
     if (!colorBg.isEmpty())
-      treeWidgetItem->setBackgroundColor(1, QColor(colorBg));
+      treeWidgetItem->setBackground(1, QColor(colorBg));
     labelsTree_->addTopLevelItem(treeWidgetItem);
   }
 }
@@ -2454,9 +2464,9 @@ void OptionsDialog::newLabel()
   QTreeWidgetItem *treeWidgetItem = new QTreeWidgetItem(itemStr);
   treeWidgetItem->setIcon(1, labelDialog->icon_);
   if (!colorText.isEmpty())
-    treeWidgetItem->setTextColor(1, QColor(colorText));
+    treeWidgetItem->setForeground(1, QColor(colorText));
   if (!colorBg.isEmpty())
-    treeWidgetItem->setBackgroundColor(1, QColor(colorBg));
+    treeWidgetItem->setBackground(1, QColor(colorBg));
   labelsTree_->addTopLevelItem(treeWidgetItem);
   addIdLabelList(treeWidgetItem->text(0));
 
@@ -2510,9 +2520,9 @@ void OptionsDialog::editLabel()
   treeWidgetItem->setText(3, colorBg);
   treeWidgetItem->setIcon(1, labelDialog->icon_);
   if (!colorText.isEmpty())
-    treeWidgetItem->setTextColor(1, QColor(colorText));
+    treeWidgetItem->setForeground(1, QColor(colorText));
   if (!colorBg.isEmpty())
-    treeWidgetItem->setBackgroundColor(1, QColor(colorBg));
+    treeWidgetItem->setBackground(1, QColor(colorBg));
   addIdLabelList(idLabelStr);
 
   QList<QStandardItem *> treeItems;
@@ -2830,7 +2840,7 @@ void OptionsDialog::applyPass()
   db_.transaction();
   QSqlQuery q;
   for (int i = 0; i < passTree_->topLevelItemCount(); i++) {
-    if (passTree_->isItemHidden(passTree_->topLevelItem(i))) {
+    if (passTree_->topLevelItem(i)->isHidden()) {
       QString id = passTree_->topLevelItem(i)->text(0);
       q.exec(QString("DELETE FROM passwords WHERE id=='%1'").arg(id));
     }

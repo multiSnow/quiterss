@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 #endif
 #include <QtSql>
 #include <QtWebKit>
-#include <QNetworkProxy>
 #if !defined(HAVE_QT5) || defined(HAVE_PRINT)
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
@@ -126,6 +125,7 @@ public:
 
   QAction *newsToolbarToggle_;
   QAction *browserToolbarToggle_;
+  QAction *webWidgetVisibleAct_;
   QAction *categoriesPanelToggle_;
   QAction *statusBarToggle_;
   QAction *newsFilter_;
@@ -528,9 +528,6 @@ private:
   bool eventFilter(QObject *obj, QEvent *event);
   void changeEvent(QEvent *event);
 
-  QNetworkProxy networkProxy_;
-
-  void setProxy(const QNetworkProxy proxy);
   void createFeedsWidget();
   void createNewsTab(int index);
   void createToolBarNull();

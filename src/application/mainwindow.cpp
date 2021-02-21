@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -717,7 +717,7 @@ void MainWindow::createCentralWidget()
         QString("QSplitter::handle {background: qlineargradient("
                 "x1: 0, y1: 0, x2: 0, y2: 1,"
                 "stop: 0 %1, stop: 0.07 %2);}").
-        arg(feedsPanel_->palette().background().color().name()).
+        arg(feedsPanel_->palette().window().color().name()).
         arg(qApp->palette().color(QPalette::Dark).name()));
   mainSplitter_->setChildrenCollapsible(false);
   mainSplitter_->addWidget(feedsWidget_);
@@ -1204,6 +1204,11 @@ void MainWindow::createActions()
   connect(pushButtonNull_, SIGNAL(clicked()), feedsWidgetVisibleAct_, SLOT(trigger()));
   this->addAction(feedsWidgetVisibleAct_);
 
+  webWidgetVisibleAct_ = new QAction(this);
+  webWidgetVisibleAct_->setObjectName("webWidgetVisibleAct");
+  webWidgetVisibleAct_->setCheckable(true);
+  this->addAction(webWidgetVisibleAct_);
+
   showUnreadCount_ = new QAction(this);
   showUnreadCount_->setData(feedsView_->columnIndex("unread"));
   showUnreadCount_->setCheckable(true);
@@ -1472,7 +1477,7 @@ void MainWindow::createActions()
 
   viberShareAct_ = new QAction(this);
   viberShareAct_->setObjectName("viberShareAct");
-  viberShareAct_->setText("Vider");
+  viberShareAct_->setText("Viber");
   viberShareAct_->setIcon(QIcon(":/share/images/share/viber.png"));
   shareGroup_->addAction(viberShareAct_);
 
@@ -1590,6 +1595,7 @@ void MainWindow::createShortcut()
 
   feedsWidgetVisibleAct_->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_D));
   listActions_.append(feedsWidgetVisibleAct_);
+  listActions_.append(webWidgetVisibleAct_);
 
   listActions_.append(placeToTrayAct_);
 
@@ -1721,6 +1727,8 @@ void MainWindow::createMenu()
   fileMenu_->addAction(exitAct_);
 
   toolbarsMenu_ = new QMenu(this);
+  toolbarsMenu_->addAction(feedsWidgetVisibleAct_);
+  toolbarsMenu_->addAction(webWidgetVisibleAct_);
   toolbarsMenu_->addAction(mainToolbarToggle_);
   toolbarsMenu_->addAction(feedsToolbarToggle_);
   toolbarsMenu_->addAction(newsToolbarToggle_);
@@ -2012,6 +2020,7 @@ void MainWindow::loadSettings()
   int fontSize = settings.value("feedsFontSize", qApp->font().pointSize()).toInt();
   feedsView_->setFont(QFont(fontFamily, fontSize));
   feedsModel_->font_ = feedsView_->font();
+  categoriesTree_->setFont(QFont(fontFamily, fontSize));
 
   newsListFontFamily_ = settings.value("newsFontFamily", qApp->font().family()).toString();
   newsListFontSize_ = settings.value("newsFontSize", qApp->font().pointSize()).toInt();
@@ -2124,7 +2133,7 @@ void MainWindow::loadSettings()
   QWebSettings::globalSettings()->setAttribute(
         QWebSettings::PluginsEnabled, pluginsEnable_);
   QWebSettings::globalSettings()->setMaximumPagesInCache(maxPagesInCache_);
-#if QT_VERSION >= 0x050D02
+#ifdef WEBKIT_ALPHA
   QWebSettings::globalSettings()->setAttribute(
         QWebSettings::ErrorPageEnabled, false);
 #endif
@@ -2320,6 +2329,7 @@ void MainWindow::loadSettings()
   mainSplitter_->restoreState(settings.value("MainSplitterState").toByteArray());
   feedsWidgetVisibleAct_->setChecked(settings.value("FeedsWidgetVisible", true).toBool());
   slotVisibledFeedsWidget();
+  webWidgetVisibleAct_->setChecked(settings.value("WebWidgetVisible", true).toBool());
 
   feedsWidgetSplitterState_ = settings.value("FeedsWidgetSplitterState").toByteArray();
   bool showCategories = settings.value("NewsCategoriesTreeVisible", true).toBool();
@@ -2340,14 +2350,6 @@ void MainWindow::loadSettings()
     categoriesTree_->expandAll();
 
   showMenuBar();
-
-  networkProxy_.setType(static_cast<QNetworkProxy::ProxyType>(
-                          settings.value("networkProxy/type", QNetworkProxy::DefaultProxy).toInt()));
-  networkProxy_.setHostName(settings.value("networkProxy/hostName", "").toString());
-  networkProxy_.setPort(    settings.value("networkProxy/port",     "").toUInt());
-  networkProxy_.setUser(    settings.value("networkProxy/user",     "").toString());
-  networkProxy_.setPassword(settings.value("networkProxy/password", "").toString());
-  setProxy(networkProxy_);
 
   adblockIcon_->setEnabled(settings.value("AdBlock/enabled", true).toBool());
 }
@@ -2531,6 +2533,7 @@ void MainWindow::saveSettings()
 
   settings.setValue("MainSplitterState", mainSplitter_->saveState());
   settings.setValue("FeedsWidgetVisible", showFeedsTabPermanent_);
+  settings.setValue("WebWidgetVisible", webWidgetVisibleAct_->isChecked());
 
   bool newsCategoriesTreeVisible = true;
   if (categoriesWidget_->height() <= (categoriesPanel_->height()+2)) {
@@ -2554,12 +2557,6 @@ void MainWindow::saveSettings()
                       widget->newsTabWidgetSplitter_->saveState());
   }
 
-  settings.setValue("networkProxy/type",     networkProxy_.type());
-  settings.setValue("networkProxy/hostName", networkProxy_.hostName());
-  settings.setValue("networkProxy/port",     networkProxy_.port());
-  settings.setValue("networkProxy/user",     networkProxy_.user());
-  settings.setValue("networkProxy/password", networkProxy_.password());
-
   NewsTabWidget *widget = (NewsTabWidget*)stackedWidget_->widget(TAB_WIDGET_PERMANENT);
   settings.setValue("feedSettings/currentId", widget->feedId_);
   settings.setValue("feedSettings/filterName",
@@ -2570,15 +2567,6 @@ void MainWindow::saveSettings()
   mainApp->cookieJar()->saveCookies();
   mainApp->c2fSaveSettings();
   AdBlockManager::instance()->save();
-}
-
-void MainWindow::setProxy(const QNetworkProxy proxy)
-{
-  networkProxy_ = proxy;
-  if (QNetworkProxy::DefaultProxy == networkProxy_.type())
-    QNetworkProxyFactory::setUseSystemConfiguration(true);
-  else
-    QNetworkProxy::setApplicationProxy(networkProxy_);
 }
 
 void MainWindow::showMainMenu()
@@ -3414,7 +3402,7 @@ void MainWindow::showOptionDlg(int index)
   optionsDialog_->clearStatusNew_->setChecked(clearStatusNew_);
   optionsDialog_->emptyWorking_->setChecked(emptyWorking_);
 
-  optionsDialog_->setProxy(networkProxy_);
+  optionsDialog_->setProxy(mainApp->networkProxy());
 
   int timeoutRequest = settings.value("Settings/timeoutRequest", 15).toInt();
   int numberRequests = settings.value("Settings/numberRequest", 10).toInt();
@@ -3532,7 +3520,7 @@ void MainWindow::showOptionDlg(int index)
   optionsDialog_->soundNotifyBox_->setChecked(soundNewNews_);
   optionsDialog_->editSoundNotifer_->setText(soundNotifyPath_);
   optionsDialog_->showNotifyOn_->setChecked(showNotifyOn_);
-  optionsDialog_->screenNotify_->setCurrentIndex(screenNotify_+1);
+  optionsDialog_->screenNotify_->setCurrentIndex(screenNotify_);
   optionsDialog_->positionNotify_->setCurrentIndex(positionNotify_);
   optionsDialog_->transparencyNotify_->setValue(transparencyNotify_);
   optionsDialog_->countShowNewsNotify_->setValue(countShowNewsNotify_);
@@ -3838,8 +3826,7 @@ void MainWindow::showOptionDlg(int index)
   if (showTrayIcon_) traySystem->show();
   else traySystem->hide();
 
-  networkProxy_ = optionsDialog_->proxy();
-  setProxy(networkProxy_);
+  mainApp->proxySaveSettings(optionsDialog_->proxy());
 
   timeoutRequest = optionsDialog_->timeoutRequest_->value();
   numberRequests = optionsDialog_->numberRequests_->value();
@@ -3974,7 +3961,7 @@ void MainWindow::showOptionDlg(int index)
   soundNewNews_ = optionsDialog_->soundNotifyBox_->isChecked();
   soundNotifyPath_ = optionsDialog_->editSoundNotifer_->text();
   showNotifyOn_ = optionsDialog_->showNotifyOn_->isChecked();
-  screenNotify_ = optionsDialog_->screenNotify_->currentIndex()-1;
+  screenNotify_ = optionsDialog_->screenNotify_->currentIndex();
   positionNotify_ = optionsDialog_->positionNotify_->currentIndex();
   transparencyNotify_ = optionsDialog_->transparencyNotify_->value();
   countShowNewsNotify_ = optionsDialog_->countShowNewsNotify_->value();
@@ -4001,6 +3988,7 @@ void MainWindow::showOptionDlg(int index)
         optionsDialog_->fontsTree_->topLevelItem(0)->text(2).section(", ", 1).toInt());
   feedsView_->setFont(font);
   feedsModel_->font_ = font;
+  categoriesTree_->setFont(font);
 
   newsListFontFamily_ = optionsDialog_->fontsTree_->topLevelItem(1)->text(2).section(", ", 0, 0);
   newsListFontSize_ = optionsDialog_->fontsTree_->topLevelItem(1)->text(2).section(", ", 1).toInt();
@@ -5065,7 +5053,10 @@ void MainWindow::retranslateStrings()
   switchFocusPrevAct_->setToolTip(
         tr("Switch Focus to Previous Panel (Tree Feeds, Browser, List News)"));
 
-  feedsWidgetVisibleAct_->setText(tr("Show/Hide Tree Feeds"));
+  feedsWidgetVisibleAct_->setText(tr("Tree Feeds"));
+  feedsWidgetVisibleAct_->setToolTip(tr("Show/Hide Tree Feeds"));
+  webWidgetVisibleAct_->setText(tr("Browser"));
+  webWidgetVisibleAct_->setToolTip(tr("Show/Hide Browser"));
 
   placeToTrayAct_->setText(tr("Minimize to Tray"));
   placeToTrayAct_->setToolTip(tr("Minimize Application to Tray"));
@@ -5885,9 +5876,9 @@ void MainWindow::slotRefreshInfoTray(int newCount, int unreadCount)
       QRect rectangle(0, 0, 128, 128);
       QLinearGradient gradient(rectangle.bottomLeft(), rectangle.topLeft());
       QColor color("#117C04");
-      gradient.setColorAt(0, color.light());
+      gradient.setColorAt(0, color.lighter());
       gradient.setColorAt(0.5, color);
-      gradient.setColorAt(1, color.light());
+      gradient.setColorAt(1, color.lighter());
       trayPainter.setBrush(gradient);
       trayPainter.drawRoundedRect(rectangle, 20, 20);
       trayPainter.setFont(font);
@@ -6350,7 +6341,7 @@ void MainWindow::setStyleApp(QAction *pAct)
         QString("QSplitter::handle {background: qlineargradient("
                 "x1: 0, y1: 0, x2: 0, y2: 1,"
                 "stop: 0 %1, stop: 0.07 %2);}").
-        arg(feedsPanel_->palette().background().color().name()).
+        arg(feedsPanel_->palette().window().color().name()).
         arg(qApp->palette().color(QPalette::Dark).name()));
 
   mainApp->reloadUserStyleBrowser();

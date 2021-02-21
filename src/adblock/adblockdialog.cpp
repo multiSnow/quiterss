@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -59,7 +59,11 @@ AdBlockDialog::AdBlockDialog(QWidget* parent)
   setAttribute(Qt::WA_DeleteOnClose);
   setupUi(this);
 
+#ifdef HAVE_QT5
+  const QRect screen = QGuiApplication::primaryScreen()->geometry();
+#else
   const QRect screen = QApplication::desktop()->screenGeometry();
+#endif
   const QRect size = geometry();
   move((screen.width() - size.width()) / 2, (screen.height() - size.height()) / 2);
   tabWidget->setDocumentMode(false);

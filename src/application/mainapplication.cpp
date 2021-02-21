@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -188,10 +188,11 @@ void MainApplication::createSettings()
     }
   }
   if (!findLang) strLang = "en";
-
   langFileName_ = settings.value("langFileName", strLang).toString();
 
   settings.endGroup();
+
+  proxyLoadSettings();
 }
 
 #ifdef USE_ANALYTICS
@@ -272,14 +273,19 @@ void MainApplication::quitApplication()
 
 void MainApplication::showClosingWidget()
 {
+#ifdef HAVE_QT5
+  const QRect screenGeometry = QGuiApplication::primaryScreen()->availableGeometry();
+#else
+  const QRect screenGeometry = QApplication::desktop()->availableGeometry();
+#endif
   closingWidget_ = new QWidget(0, Qt::Dialog | Qt::WindowStaysOnTopHint | Qt::WindowCloseButtonHint);
   closingWidget_->setFocusPolicy(Qt::NoFocus);
   QVBoxLayout *layout = new QVBoxLayout(closingWidget_);
   layout->addWidget(new QLabel(tr("Saving data...")));
   closingWidget_->resize(150, 20);
   closingWidget_->show();
-  closingWidget_->move(QApplication::desktop()->availableGeometry().width() - closingWidget_->frameSize().width(),
-               QApplication::desktop()->availableGeometry().height() - closingWidget_->frameSize().height());
+  closingWidget_->move(screenGeometry.width() - closingWidget_->frameSize().width(),
+               screenGeometry.height() - closingWidget_->frameSize().height());
   closingWidget_->setFixedSize(closingWidget_->size());
   qApp->processEvents();
 }
@@ -636,4 +642,44 @@ QUrl MainApplication::userStyleSheet(const QString &filePath) const
   const QString &dataString = QString("data:text/css;charset=utf-8;base64,%1").arg(encodedStyle);
 
   return QUrl(dataString);
+}
+
+void MainApplication::proxyLoadSettings()
+{
+  Settings settings;
+  settings.beginGroup("networkProxy");
+  networkProxy_.setType(static_cast<QNetworkProxy::ProxyType>(
+                          settings.value("type", QNetworkProxy::DefaultProxy).toInt()));
+  networkProxy_.setHostName(settings.value("hostName", "").toString());
+  networkProxy_.setPort(    settings.value("port",     "").toUInt());
+  networkProxy_.setUser(    settings.value("user",     "").toString());
+  networkProxy_.setPassword(settings.value("password", "").toString());
+  settings.endGroup();
+
+  setProxy();
+}
+
+void MainApplication::proxySaveSettings(const QNetworkProxy &proxy)
+{
+  networkProxy_ = proxy;
+
+  Settings settings;
+  settings.beginGroup("networkProxy");
+  settings.setValue("type",     networkProxy_.type());
+  settings.setValue("hostName", networkProxy_.hostName());
+  settings.setValue("port",     networkProxy_.port());
+  settings.setValue("user",     networkProxy_.user());
+  settings.setValue("password", networkProxy_.password());
+  settings.endGroup();
+
+  setProxy();
+}
+
+void MainApplication::setProxy()
+{
+
+  if (QNetworkProxy::DefaultProxy == networkProxy_.type())
+    QNetworkProxyFactory::setUseSystemConfiguration(true);
+  else
+    QNetworkProxy::setApplicationProxy(networkProxy_);
 }

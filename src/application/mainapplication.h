@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -29,6 +29,7 @@
 #include <QNetworkDiskCache>
 #include <QLocale>
 #include <QLibraryInfo>
+#include <QNetworkProxy>
 
 #include "cookiejar.h"
 #include "downloadmanager.h"
@@ -95,6 +96,10 @@ public:
   GAnalytics *analytics() const { return analytics_; }
 #endif
 
+  QNetworkProxy networkProxy() const { return networkProxy_; }
+  void proxyLoadSettings();
+  void proxySaveSettings(const QNetworkProxy &proxy);
+
 public slots:
   void receiveMessage(const QString &message);
   void quitApplication();
@@ -121,6 +126,8 @@ private:
 
   QUrl userStyleSheet(const QString &filePath) const;
 
+  void setProxy();
+
   bool isPortableAppsCom_;
   bool isClosing_;
 
@@ -146,6 +153,7 @@ private:
   QStringList c2fWhitelist_;
   bool c2fEnabled_;
 
+  QNetworkProxy networkProxy_;
 #ifdef USE_ANALYTICS
   GAnalytics *analytics_;
 #endif

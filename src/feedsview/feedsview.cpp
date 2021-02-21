@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -211,7 +211,7 @@ QModelIndex FeedsView::lastFeedInFolder(const QModelIndex &indexFolder)
   QModelIndex index = QModelIndex();
 
   for (int i = model()->rowCount(indexFolder)-1; i >= 0; --i) {
-    index = indexFolder.child(i, columnIndex("text"));
+    index = model()->index(i, columnIndex("text"), indexFolder);
     if (isFolder(index))
       index = lastFeedInFolder(index);
     if (index.isValid())
@@ -256,7 +256,7 @@ QModelIndex FeedsView::firstFeedInFolder(const QModelIndex &indexFolder)
   QModelIndex index = QModelIndex();
 
   for (int i = 0; i < model()->rowCount(indexFolder); i++) {
-    index = indexFolder.child(i, columnIndex("text"));
+    index = model()->index(i, columnIndex("text"), indexFolder);
     if (isFolder(index))
       index = firstFeedInFolder(index);
     if (index.isValid())
@@ -302,7 +302,7 @@ QModelIndex FeedsView::lastFolderInFolder(const QModelIndex &indexFolder)
 {
   if (indexFolder.isValid()) {
     for (int i = model()->rowCount(indexFolder)-1; i >= 0; --i) {
-      QModelIndex index = indexFolder.child(i, columnIndex("text"));
+      QModelIndex index = model()->index(i, columnIndex("text"), indexFolder);
       if (isFolder(index)) {
         return index;
       }
@@ -341,7 +341,7 @@ QModelIndex FeedsView::firstFolderInFolder(const QModelIndex &indexFolder)
 {
   if (indexFolder.isValid()) {
     for (int i = 0; i < model()->rowCount(indexFolder); i++) {
-      QModelIndex index = indexFolder.child(i, columnIndex("text"));
+      QModelIndex index = model()->index(i, columnIndex("text"), indexFolder);
       if (isFolder(index)) {
         return index;
       }

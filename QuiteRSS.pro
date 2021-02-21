@@ -42,6 +42,9 @@ isEqual(QT_MAJOR_VERSION, 5) {
     QT += multimedia
     DEFINES += HAVE_MEDIA
   }
+  equals(WEBKIT_ALPHA, true) {
+      DEFINES += WEBKIT_ALPHA
+  }
 } else {
   QT += core gui network xml webkit sql
   os2 {

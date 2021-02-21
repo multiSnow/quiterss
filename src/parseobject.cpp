@@ -1,6 +1,6 @@
 /* ============================================================
 * QuiteRSS is a open-source cross-platform RSS/Atom news feeds reader
-* Copyright (C) 2011-2020 QuiteRSS Team <quiterssteam@gmail.com>
+* Copyright (C) 2011-2021 QuiteRSS Team <quiterssteam@gmail.com>
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,6 @@
 
 ParseObject::ParseObject(QObject *parent)
   : QObject(parent)
-  , currentFeedId_(0)
 {
   setObjectName("parseObject_");
 
@@ -77,20 +76,23 @@ void ParseObject::parseXml(QByteArray data, int feedId,
  *----------------------------------------------------------------------------*/
 void ParseObject::getQueuedXml()
 {
-  if (currentFeedId_) return;
+  if (!mutex_.tryLock())
+    return;
 
   if (idsQueue_.count()) {
-    currentFeedId_ = idsQueue_.dequeue();
+    int feedId = idsQueue_.dequeue();
     QByteArray currentXml_ = xmlsQueue_.dequeue();
     QDateTime currentDtReady_ = dtReadyQueue_.dequeue();
     QString currentCodecName_ = codecNameQueue_.dequeue();
-    qDebug() << "xmlsQueue_ >>" << currentFeedId_ << "count=" << xmlsQueue_.count();
+    qDebug() << "xmlsQueue_ >>" << feedId << "count=" << xmlsQueue_.count();
 
-    emit signalReadyParse(currentXml_, currentFeedId_, currentDtReady_, currentCodecName_);
-
-    currentFeedId_ = 0;
-    parseTimer_->start();
+    emit signalReadyParse(currentXml_, feedId, currentDtReady_, currentCodecName_);
   }
+
+  mutex_.unlock();
+
+  if (idsQueue_.count())
+    parseTimer_->start();
 }
 
 /** @brief Parse xml-data
@@ -1096,7 +1098,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("UPPER(title) LIKE '%%1%' ").arg(content.toUpper()));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("UPPER(title) NOT LIKE '%%1%' ").arg(content.toUpper()));
             break;
           case 2: // condition -> is
@@ -1121,7 +1123,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("UPPER(description) LIKE '%%1%' ").arg(content.toUpper()));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("UPPER(description) NOT LIKE '%%1%' ").arg(content.toUpper()));
             break;
           case 2: // condition -> regExp
@@ -1134,7 +1136,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("UPPER(author_name) LIKE '%%1%' ").arg(content.toUpper()));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("UPPER(author_name) NOT LIKE '%%1%' ").arg(content.toUpper()));
             break;
           case 2: // condition -> is
@@ -1153,7 +1155,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("UPPER(category) LIKE '%%1%' ").arg(content.toUpper()));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("UPPER(category) NOT LIKE '%%1%' ").arg(content.toUpper()));
             break;
           case 2: // condition -> is
@@ -1205,7 +1207,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("link_href LIKE '%%1%' ").arg(content));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("link_href NOT LIKE '%%1%' ").arg(content));
             break;
           case 2: // condition -> is
@@ -1230,7 +1232,7 @@ void ParseObject::runUserFilter(int feedId, int filterId)
           case 0: // condition -> contains
             qStr1.append(QString("(UPPER(title) LIKE '%%1%' OR UPPER(description) LIKE '%%1%') ").arg(content.toUpper()));
             break;
-          case 1: // condition -> doesn't contains
+          case 1: // condition -> doesn't contain
             qStr1.append(QString("(UPPER(title) NOT LIKE '%%1%' OR UPPER(description) NOT LIKE '%%1%') ").arg(content.toUpper()));
             break;
           case 2: // condition -> regExp
